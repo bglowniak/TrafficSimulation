@@ -9,10 +9,9 @@ class Vehicle():
 
     @attribute speed: how fast the vehicle is currently going
     @attribute max_speed: The maximum speed of this vehicle
-    @attribute
+    @attribute gap: The gap between this vehicle and the one in front of it
     '''
     
-
     def __init__(self):
         self.speed = 0
         self.max_speed = MAX_SPEED

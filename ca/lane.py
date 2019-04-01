@@ -5,6 +5,7 @@ import random
 NEW_CAR_PROBABILITY = .85
 class Lane():
     '''
+    Class describing behavior of a lane for vehicles
     '''
 
     def __init__(self, length, n_cars, stoplights = {}):

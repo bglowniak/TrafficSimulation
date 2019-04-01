@@ -1,5 +1,8 @@
 
 class Stoplight():
+    '''
+    Class defining behavior of the stoplight object
+    '''
 
     def __init__(self, is_green, green_time=None, red_time=None):
         self.is_green = is_green
@@ -27,5 +30,3 @@ class Stoplight():
             self.set_red()
         elif not self.is_green and self.counter >= self.red_time:
             self.set_green()
-
-        
