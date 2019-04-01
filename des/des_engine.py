@@ -3,13 +3,15 @@
 from queue import PriorityQueue
 from abc import ABC, abstractmethod
 
+num_events = 5
+
 # define an abstract base class for events
 class Event(ABC):
     def __init__(self, timestamp):
         self.timestamp = timestamp
 
     def get_timestamp(self):
-        return timestamp
+        return self.timestamp
 
     @abstractmethod
     def execute(self):
@@ -22,15 +24,18 @@ class Event(ABC):
 future_event_list = PriorityQueue()
 current_time = 0.0
 
-def current_time():
+def simulation_time():
     return current_time
 
 def schedule_event(timestamp, event):
-    future_event_list.put(timestamp, event)
+    future_event_list.put((timestamp, event))
 
 def run_simulation():
-    while not future_event_list.empty():
-        current = future_event_list.get()
+    global current_time
+    events_processed = 0
+    while not future_event_list.empty() and events_processed < num_events:
+        current = future_event_list.get()[1]
         current_time = current.get_timestamp()
         print(current.description())
         current.execute()
+        events_processed += 1

@@ -3,7 +3,10 @@
 from des_engine import Intersection
 
 class Vehicle:
-    def __init__(self, enter_time, enter_location, exit_location):
+    def __init__(self, vid, enter_time, enter_location, exit_location):
+        # id to associate with vehicle
+        self.vehicle_id = vid
+
         # the timestamp when the vehicle enters the simulation
         self.enter_time = enter_time
 
@@ -19,8 +22,10 @@ class Vehicle:
         # for the checkpoint, this is unused
         self.speed = 0
 
+    def get_id(self):
+        return self.vehicle_id
 
-    def calc_travel_time():
+    def calc_travel_time(self):
         if exit_time != None:
             return self.exit_time - self.enter_time
         else:
