@@ -1,17 +1,16 @@
 # des-simulation.py initializes the simulation based on inputted parameters, maintains the queues of each intersection, and creates and schedules events
 # simulation state variables and initialization
 
-# also schedules vehicle entrances at certain times
+from des_engine import run_simulation, current_time, schedule_event
+from des_events import *
+from des_intersection import *
+import time
 
-from enum import Enum
+first_event = IntersectionArrival(current_time(), Intersections.TENTH)
+schedule_event(first_event)
 
-class Intersections(Enum):
-    TENTH = 0
-    ELEVENTH = 1
-    TWELFTH = 2
-    THIRTEENTH = 3
-    FOURTEENTH = 4
+start_time = time.time()
+run_simulation()
+end_time = time.time()
 
-class TrafficSimulation:
-    def __init__(self):
-        print("woot")
+print(end_time - start_time)
