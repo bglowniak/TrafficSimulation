@@ -1,11 +1,12 @@
 # vehicle class, keeps track of arrival time and exit time
-
-from des_engine import Intersection
+from des_intersection import Intersections
 
 class Vehicle:
-    def __init__(self, vid, enter_time, enter_location, exit_location):
+    vehicle_num = 0
+    def __init__(self, enter_time=0.0, enter_location=Intersections.TENTH, exit_location=Intersections.FOURTEENTH):
         # id to associate with vehicle
-        self.vehicle_id = vid
+        self.vehicle_id = Vehicle.vehicle_num
+        Vehicle.vehicle_num += 1
 
         # the timestamp when the vehicle enters the simulation
         self.enter_time = enter_time
@@ -25,8 +26,11 @@ class Vehicle:
     def get_id(self):
         return self.vehicle_id
 
+    def set_exit_time(self, time):
+        self.exit_time = time
+
     def calc_travel_time(self):
-        if exit_time != None:
+        if self.exit_time != None:
             return self.exit_time - self.enter_time
         else:
             return -1

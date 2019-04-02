@@ -1,15 +1,17 @@
+# may make this file all utilities for the simulation (wrapper object for intersection list that also tracks vehicles in sim/vehicle times)
+
 from queue import Queue
 from enum import Enum
 
 # define an enum for our discrete set of intersections
 class Intersections(Enum):
-    TENTH = "10th"
-    ELEVENTH = "11th"
-    TWELFTH = "12th"
-    THIRTEENTH = "13th"
-    FOURTEENTH = "14th"
+    TENTH = 0
+    ELEVENTH = 1
+    TWELFTH = 2
+    THIRTEENTH = 3
+    FOURTEENTH = 4
 
-# we will represent our simulation as a chain of intersections (think nodes in a network)
+# we will represent our simulation as a chain of intersections (nodes in a network)
 class Intersection:
     def __init__(self, intersection_id, green, red):
         # IGNORING YELLOW AND LEFT TURNS FOR NOW, ONLY DOING ONE LANE
@@ -36,17 +38,44 @@ class Intersection:
     def queue_vehicle(self, vehicle):
         self.lane_queue.put(vehicle)
 
+    def num_queueing(self):
+        return self.lane_queue.qsize()
+
+    def dequeue_vehicle(self):
+        if self.lane_queue.empty():
+            return None
+
+        return self.lane_queue.get()
+
     def next_intersection(self):
         if self.intersection_id is Intersections.FOURTEENTH:
             return None
         else:
             return Intersections(self.intersection_id.value + 1)
 
+# taken from signalTimings.xls from the NGSIM dataset. These durations only reflect the TR component.
+# NORTHBOUND
+# green_duration = Green TR + 0.5 * Yellow TR
+# red_duration = Red TR + 0.5 * Yellow TR
+# adding half the Yellow TR accounts for how some cars may stop and some may continue when a light is yellow
+
+tenth_green_duration = 36.5
+tenth_red_duration = 51.1
+
+eleventh_green_duration = 43.1
+eleventh_red_duration = 57
+
+twelfth_green_duration = 62.5
+twelfth_red_duration = 37.3
+
+fourteenth_green_duration = 36.2
+fourteenth_red_duration = 47.7
+
 # instantiate intersections in dictionary for use by other modules
 intersection_list = {
-    Intersections.TENTH: Intersection(Intersections.TENTH, 10, 10),
-    Intersections.ELEVENTH: Intersection(Intersections.ELEVENTH, 10, 10),
-    Intersections.TWELFTH: Intersection(Intersections.TWELFTH, 10, 10),
+    Intersections.TENTH: Intersection(Intersections.TENTH, tenth_green_duration, tenth_red_duration),
+    Intersections.ELEVENTH: Intersection(Intersections.ELEVENTH, eleventh_green_duration, eleventh_red_duration),
+    Intersections.TWELFTH: Intersection(Intersections.TWELFTH, twelfth_green_duration, twelfth_red_duration),
     Intersections.THIRTEENTH: Intersection(Intersections.THIRTEENTH, 0, 0),
-    Intersections.FOURTEENTH: Intersection(Intersections.FOURTEENTH, 10, 10)
+    Intersections.FOURTEENTH: Intersection(Intersections.FOURTEENTH, fourteenth_green_duration, fourteenth_red_duration)
 }
