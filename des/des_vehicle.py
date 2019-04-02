@@ -20,8 +20,8 @@ class Vehicle:
         # the intersection which the vehicle will exit from
         self.exit = exit_location
 
-        # for the checkpoint, this is unused
-        self.speed = 0
+        # the speed of the vehicle in MPH (constant value for now)
+        self.speed = 30.0
 
     def get_id(self):
         return self.vehicle_id
@@ -29,8 +29,14 @@ class Vehicle:
     def set_exit_time(self, time):
         self.exit_time = time
 
-    def calc_travel_time(self):
+    def calc_total_time(self):
         if self.exit_time != None:
             return self.exit_time - self.enter_time
         else:
             return -1
+
+    # returns the time in seconds it takes to travel a certain distance
+    def calc_travel_time(self, distance):
+        hours = distance / self.speed
+        return hours * 3600
+

@@ -3,8 +3,6 @@
 from queue import PriorityQueue
 from abc import ABC, abstractmethod
 
-num_events = 5
-
 # define an abstract base class for events
 class Event(ABC):
     def __init__(self, timestamp):
@@ -38,10 +36,10 @@ def schedule_event(event):
 
 def run_simulation():
     global current_time
-    events_processed = 0
-    while not future_event_list.empty(): #and events_processed < num_events:
+    while not future_event_list.empty():
         current = future_event_list.get()
         current_time = current.get_timestamp()
         current.execute()
-        print(current.get_result())
-        events_processed += 1
+        result = current.get_result()
+        if not result == "":
+            print(result)
