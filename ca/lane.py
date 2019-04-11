@@ -1,70 +1,99 @@
+from cell import Cell
 from vehicle import Vehicle
 from stoplight import Stoplight
 import random
-#TODO: this lane either needs traffic lights, or it needs to be connected at the ends somehow
-NEW_CAR_PROBABILITY = .85
+
+NEW_CAR_PROBABILITY = .80
+
 class Lane():
     '''
     Class describing behavior of a lane for vehicles
+
+    list lane: list of cells that may contain vehicles or stoplights or neither
+    integer length: length of the lane in number of cells
     '''
 
-    def __init__(self, length, n_cars, stoplights = {}):
+    def __init__(self, length):
         '''
-        length: integer length of the lane
-        n_cars: integer number of cars to initialize in the lane
-        stoplights: list of integers indicating the locations of the stoplights
+        integer length: length in cells of the lane
         '''
-        if (n_cars > length):
-            raise ValueError("Number of cars cannot exceed length of the lane!")
+        if length < 1:
+            raise ValueError('Length of lane must be greater than one.')
         self.length = length
-        self.n_cars = n_cars
-        self.lane = [None] * length
-        self.initialize_vehicles()
-        self.stoplights = stoplights
-    
-    def initialize_vehicles(self):
-        locations = random.sample(range(self.length), self.n_cars)
-        for position in locations:
-            self.lane[position] = Vehicle()
-        
-    def timestep(self):
-        self.update_vehicles()
-        for key in self.stoplights.keys():
-            self.stoplights[key].timestep()
-        new_lane = [None] * self.length
-        for position in range(self.length):
-            if self.lane[position] is not None:
-                speed = self.lane[position].get_speed()
-                if position + speed < self.length:
-                    new_lane[position + speed] = self.lane[position]
-        self.lane = new_lane
-        if random.random() < NEW_CAR_PROBABILITY:
-            self.lane[0] = Vehicle()
+        self.lane = self.make_lane()
 
-    def update_vehicles(self):
-        gap = 5 #initial gap value for last car (maybe this should be the wraparound distance to the first car? something else?)
-        #loop backwards through the lane
-        #update the gap
-        #then update the speed (since you now have the correct gap)
-        for position in reversed(range(self.length)):
-            if position in self.stoplights:
-                if not self.stoplights[position].is_green:
-                    gap = 0
-            if self.lane[position] is not None:
-                self.lane[position].set_gap(gap)
-                self.lane[position].update_speed()
+    def make_lane(self):
+        lane = []
+        for i in range(self.length):
+            lane.append(Cell())
+        return lane
+
+    def add_stoplights(self, stoplights):
+        #stoplights is a dictionary mapping locations to stoplights
+        for loc in stoplights.keys():
+            self.add_light(loc, stoplights[loc])
+    
+    def add_light(self, loc, light):
+        #TODO: remove for if has obstruction, and just make it another stoplight
+        if self.lane[loc].has_obstruction():
+            raise ValueError('Failed to add stoplight; cell is already occupied.')
+        self.lane[loc].set_stoplight(light)
+
+    def timestep(self):
+        self.add_car()
+        self.update_gaps()
+        self.change_lanes()
+        self.update_vehicle_speeds()
+        self.advance_vehicles()
+        self.timestep_stoplights()
+        
+    def add_car(self):
+        if random.random() < NEW_CAR_PROBABILITY:
+            vehicle = Vehicle()
+            self.lane[0].set_vehicle(vehicle)
+
+    def update_gaps(self):
+        gap = 5 #allows cars at the end to leave freely
+        for cell in reversed(self.lane):
+            cell.set_gap(gap)
+            if cell.has_obstruction():
                 gap = 0
             else:
                 gap += 1
 
+    def change_lanes(self):
+        pass
+    
+    def update_vehicle_speeds(self):
+        for cell in self.lane:
+            if cell.has_vehicle():
+                cell.get_vehicle().update_speed()
+
+    def advance_vehicles(self):
+        vehicle_list = {}
+        for i in range(self.length):
+            if self.lane[i].has_vehicle():
+                vehicle = self.lane[i].remove_vehicle()
+                loc = i + vehicle.get_speed()
+                vehicle_list.update({loc: vehicle})
+        for loc, vehicle in vehicle_list.items():
+            if loc < self.length:
+                self.lane[loc].set_vehicle(vehicle)
+
+    def timestep_stoplights(self):
+        for cell in self.lane:
+            if cell.has_stoplight():
+                cell.get_stoplight().timestep()
+
     def __str__(self):
         s = ''
-        for position in range(self.length):
-            if self.lane[position] is not None:
+        for cell in self.lane:
+            if cell.has_stoplight() and cell.has_vehicle():
+                s += '|X|'
+            elif cell.has_stoplight():
+                s += '| |'
+            elif cell.has_vehicle():
                 s += 'X'
             else:
                 s += '_'
-        for i in range(self.length-1, -1, -1):
-            if i in self.stoplights:
-                s = s[0:i+1] + '#' + s[i+1:]
         return s

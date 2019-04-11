@@ -1,7 +1,17 @@
 
 class Stoplight():
     '''
-    Class defining behavior of the stoplight object
+    Class defining behavior of the Stoplight object
+
+    Instance Variables:
+        boolean is_green: TRUE if the light is green, FALSE if red
+        integer counter: time since last light change
+        integer green_time: length of time for light to stay green
+
+    Functions:
+        None set_green(): sets is_green to TRUE
+        None set_red(): sets is_green to FALSE
+        None timestep(): increments counter, toggles light if necessary
     '''
 
     def __init__(self, is_green, green_time=None, red_time=None):

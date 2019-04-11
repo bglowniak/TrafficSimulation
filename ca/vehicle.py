@@ -1,7 +1,7 @@
 from random import random
 
 MAX_SPEED = 5
-RANDOM_SLOWDOWN = .05
+RANDOM_SLOWDOWN = .1
 
 class Vehicle():
     '''
