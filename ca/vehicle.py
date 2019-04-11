@@ -30,3 +30,6 @@ class Vehicle():
         
     def set_gap(self, gap):
         self.gap = gap
+
+    def get_gap(self):
+        return self.gap

@@ -3,7 +3,7 @@ from vehicle import Vehicle
 from stoplight import Stoplight
 import random
 
-NEW_CAR_PROBABILITY = .80
+NEW_CAR_PROBABILITY = .30
 
 class Lane():
     '''
@@ -34,23 +34,24 @@ class Lane():
             self.add_light(loc, stoplights[loc])
     
     def add_light(self, loc, light):
-        #TODO: remove for if has obstruction, and just make it another stoplight
-        if self.lane[loc].has_obstruction():
-            raise ValueError('Failed to add stoplight; cell is already occupied.')
+        if self.lane[loc].has_stoplight():
+            raise ValueError('Failed to add stoplight; cell is already has stoplight.')
         self.lane[loc].set_stoplight(light)
 
     def timestep(self):
+        #unique to a one lane road
         self.add_car()
         self.update_gaps()
-        self.change_lanes()
         self.update_vehicle_speeds()
         self.advance_vehicles()
         self.timestep_stoplights()
         
-    def add_car(self):
-        if random.random() < NEW_CAR_PROBABILITY:
+    def add_car(self, pos=0, prob=NEW_CAR_PROBABILITY):
+        if self.lane[pos].has_vehicle():
+            return False
+        if random.random() < prob:
             vehicle = Vehicle()
-            self.lane[0].set_vehicle(vehicle)
+            self.lane[pos].set_vehicle(vehicle)
 
     def update_gaps(self):
         gap = 5 #allows cars at the end to leave freely
@@ -61,8 +62,42 @@ class Lane():
             else:
                 gap += 1
 
-    def change_lanes(self):
-        pass
+    def look_back(self, loc):
+        if loc >= self.length:
+            raise ValueError("Out of bounds error, cannot check gap outside range of lane length.")
+        count = -1
+        while loc >= 0:
+            if self.lane[loc].has_vehicle():
+                return count
+            count += 1
+            loc -= 1
+        return count
+
+    def check_gap(self, loc):
+        if loc >= self.length:
+            raise ValueError("Out of bounds error, cannot check gap outside range of lane length.")
+        return self.lane[loc].get_gap()
+
+    def remove_vehicle(self, loc):
+        if loc >= self.length:
+            raise ValueError("Out of bounds error, cannot check gap outside range of lane length.")
+        if not self.lane[loc].has_vehicle():
+            raise ValueError("Lane at location {} does not have a vehicle to remove.".format(loc))
+        return self.lane[loc].remove_vehicle()
+        
+    def add_vehicle(self, loc, vehicle):
+        if loc >= self.length:
+            raise ValueError("Out of bounds error, cannot check gap outside range of lane length.")
+        if self.lane[loc].has_vehicle():
+            raise ValueError("Cannot add vehicle where there is already another vehicle.")
+        self.lane[loc].set_vehicle(vehicle)
+    
+    def get_vehicles(self):
+        vehicles = {}
+        for i in range(self.length):
+            if self.lane[i].has_vehicle():
+                vehicles.update({i: self.lane[i].get_vehicle()})
+        return vehicles
     
     def update_vehicle_speeds(self):
         for cell in self.lane:
@@ -70,6 +105,7 @@ class Lane():
                 cell.get_vehicle().update_speed()
 
     def advance_vehicles(self):
+        #TODO: could add a number of cars left the system and system time metric in this method
         vehicle_list = {}
         for i in range(self.length):
             if self.lane[i].has_vehicle():
@@ -81,9 +117,11 @@ class Lane():
                 self.lane[loc].set_vehicle(vehicle)
 
     def timestep_stoplights(self):
-        for cell in self.lane:
-            if cell.has_stoplight():
-                cell.get_stoplight().timestep()
+        for i in range(self.length):
+            if self.lane[i].has_stoplight():
+                self.lane[i].get_stoplight().timestep()
+                if not self.lane[i].get_stoplight().is_green:
+                    self.add_car(i, self.lane[i].get_stoplight().get_input_prob())
 
     def __str__(self):
         s = ''

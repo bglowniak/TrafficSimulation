@@ -1,4 +1,4 @@
-
+INPUT_PROBABILITY = .5
 class Stoplight():
     '''
     Class defining behavior of the Stoplight object
@@ -14,7 +14,7 @@ class Stoplight():
         None timestep(): increments counter, toggles light if necessary
     '''
 
-    def __init__(self, is_green, green_time=None, red_time=None):
+    def __init__(self, is_green, green_time=None, red_time=None, input_prob = INPUT_PROBABILITY):
         self.is_green = is_green
         if green_time is not None:
             self.green_time = green_time
@@ -25,6 +25,7 @@ class Stoplight():
         else:
             self.red_time = 5
         self.counter = 0
+        self.input_prob = input_prob
         
     def set_green(self):
         self.is_green = True
@@ -40,3 +41,6 @@ class Stoplight():
             self.set_red()
         elif not self.is_green and self.counter >= self.red_time:
             self.set_green()
+
+    def get_input_prob(self):
+        return self.input_prob
