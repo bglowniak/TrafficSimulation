@@ -1,4 +1,4 @@
-INPUT_PROBABILITY = .5
+INPUT_PROBABILITY = .3
 class Stoplight():
     '''
     Class defining behavior of the Stoplight object

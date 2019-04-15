@@ -123,6 +123,13 @@ class Lane():
                 if not self.lane[i].get_stoplight().is_green:
                     self.add_car(i, self.lane[i].get_stoplight().get_input_prob())
 
+    def simulate(self, timesteps, freq=1):
+        print(self)
+        for i in range(timesteps):
+            self.timestep()
+            if i%freq == 0:
+                print(self)
+
     def __str__(self):
         s = ''
         for cell in self.lane:

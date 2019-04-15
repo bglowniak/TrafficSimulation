@@ -13,18 +13,10 @@ s12 = Stoplight(True, 62, 36)
 s14 = Stoplight(True, 36, 48)
 lights = {40: s10, 80: s11, 110: s12, 150: s14}
 
-road1 = Two_Lane(201)
-road1.add_stoplights(lights)
-road1.simulate(500, 4)
-'''
+#road1 = Two_Lane(151)
+#road1.add_stoplights(lights)
+#road1.simulate(500, 4)
+
 lane1 = Lane(151)
-lights = {40: s10, 80: s11, 110: s12, 150: s14}
 lane1.add_stoplights(lights)
-
-print(lane1)
-for i in range(500):
-    lane1.timestep()
-    if i > 100 and i%2 == 0:
-        print(lane1)
-'''
-
+lane1.simulate(500,2)
