@@ -1,72 +1,204 @@
-from lane import Lane
+from stoplight import Stoplight
+from vehicle import Vehicle
+from stats import Stats
 from cell import Cell
-import random
 
+from queue import Queue
+import random
 
 BACK_GAP = 2
 LANE_CHANGE_PROB = .5
+
 class Two_Lane():
 
-    def __init__(self, length):
+    '''
+    Class describing behavior of a two lane road
+
+    Attributes:
+        length: integer length of the road
+        right_lane: array of cells
+        left_lane: array of cells
+        queues: dictionary mapping location to a list of queues for cars, index 0 is right lane, index 1 is left lane
+    '''
+
+    def __init__(self, length, stoplights):
+        self.sim_time = 0
         self.length = length
-        self.left_lane = Lane(length)
-        self.right_lane = Lane(length)
+        self.lanes = []
+        self.lanes.append(self._make_lane(length))
+        self.lanes.append(self._make_lane(length))
+        self.stoplights = stoplights
+        self._add_stoplights(stoplights)
+        self._make_input_queues(stoplights)
+        self.stats = Stats()
 
-    def add_stoplights(self, stoplights):
+    ### Setup Methods
+
+    def _make_lane(self, length):
+        lane = []
+        for _ in range(self.length):
+            lane.append(Cell())
+        return lane
+
+    def _add_stoplights(self, stoplights):
         #stoplights is a dictionary mapping locations to stoplights
-        self.left_lane.add_stoplights(stoplights)
-        self.right_lane.add_stoplights(stoplights)
+        for loc in stoplights.keys():
+            self._add_light(loc, stoplights[loc])
     
-    def add_light(self, loc, light):
-        self.left_lane.add_light(loc, light)
-        self.right_lane.add_light(loc, light)
+    def _add_light(self, loc, light):
+        if self.lanes[0][loc].has_stoplight():
+            raise ValueError('Failed to add stoplight; cell is already has stoplight.')
+        for i in [0,1]:
+            self.lanes[i][loc].set_stoplight(light)
 
-    def timestep_stoplights(self):
-        self.right_lane.timestep_stoplights()
+    def _make_input_queues(self, stoplights):
+        #make input queues at beginning and for each stoplight
+        #list index indicates which stoplight
+        self.queues = []
+        self.queues.append([Queue(), Queue(), 0])
+        for loc in self.stoplights.keys():
+            self.queues.append([Queue(), Queue(), loc])
+
+    ### Car Generation Methods
+
+    def _spawn_vehicles(self):
+        #unfinished
+        vehicle = self.stats.generate_vehicle(self.sim_time)
+        self._enqueue_vehicle(vehicle)
+        while (vehicle.get_enter_time() < self.sim_time):
+            vehicle = self.stats.generate_vehicle(self.sim_time)
+            self._enqueue_vehicle(vehicle)
+        self._place_vehicles()
+
+    def _enqueue_vehicle(self, vehicle):
+        intersection_num = vehicle.get_source()
+        lane = vehicle.get_source_lane()
+        self.queues[intersection_num][lane].put(vehicle)
+
+    def _place_vehicles(self):
+        #queues is a dict with key loc, value list, index 0 is right lane queue, index 1 is left lane queue
+        for queue_list in self.queues:
+            for i in [0,1]:
+                self._place_vehicle(queue_list[2], i, queue_list[i])
+
+    def _place_vehicle(self, loc, lane, car_queue):
+        #takes a location, lane, and queue. If the spot is empty, dequeues one car and puts it there
+        if not self.lanes[lane][loc].has_side_obstruction():
+            if not car_queue.empty():
+                car = car_queue.get()
+                self.lanes[lane][loc].set_vehicle(car)
+
+    ### Vehicle and Cell Gaps
+
+    def _update_gaps(self):
+        gap = 5 #allows cars at the end to leave freely
+        for lane in self.lanes:
+            for cell in reversed(lane):
+                cell.set_gap(gap)
+                if cell.has_obstruction():
+                    gap = 0
+                else:
+                    gap += 1
     
-    def timestep(self):
+    def _look_back(self, lane, loc):
+        #calculates backward gap at a location
+        if loc >= self.length:
+            raise ValueError("Out of bounds error, cannot check gap outside range of lane length.")
+        count = -1
+        while loc >= 0:
+            if self.lanes[lane][loc].has_vehicle():
+                return count
+            count += 1
+            loc -= 1
+        return count
+
+    ### Lane Changing
+
+    def _change_lanes(self):
+        for loc in range(self.length):
+            #lane 0
+            if self.lanes[0][loc].has_vehicle():
+                other_lane_gap = self.lanes[1][loc].get_gap()
+                other_lane_back_gap = self._look_back(1, loc)
+                if other_lane_gap > self.lanes[0][loc].get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
+                    self._switch_lanes(0, loc)
+            #lane 1
+            if self.lanes[1][loc].has_vehicle():
+                other_lane_gap = self.lanes[0][loc].get_gap()
+                other_lane_back_gap = self._look_back(0, loc)
+                if other_lane_gap > self.lanes[1][loc].get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
+                    self._switch_lanes(1, loc)
+
+    def _switch_lanes(self, lane, loc):
+        vehicle = self.lanes[lane][loc].remove_vehicle()
+        self.lanes[(lane + 1) % 2][loc].set_vehicle(vehicle)
+
+    ### Vehicle Movement
+    
+    def _update_vehicle_speeds(self):
+        for lane in self.lanes:
+            for cell in lane:
+                if cell.has_vehicle():
+                    cell.get_vehicle().update_speed()
+
+    def _advance_vehicles(self):
+        for lane in range(1):
+            vehicle_list = {}
+            for i in range(self.length):
+                if self.lanes[lane][i].has_vehicle():
+                    vehicle = self.lanes[lane][i].remove_vehicle()
+                    loc = i + vehicle.get_speed()
+                    vehicle_list.update({loc: vehicle})
+            for loc, vehicle in vehicle_list.items():
+                if loc < self.length:
+                    self.lanes[lane][loc].set_vehicle(vehicle)
+                else:
+                    self.stats.exit_simulation(self.sim_time, vehicle)
+
+    ### advance time
+
+    def _timestep(self):
         '''
-        Order? We need to add cars, update gaps, change lanes, update gaps, update speeds, advance vehicles
+        Controlls one timestep of the simulation. ORDER MATTERS!!!
         '''
-        self.right_lane.add_car()
-        self.left_lane.add_car()
-        
-        self.right_lane.update_gaps()
-        self.left_lane.update_gaps()
+        self._spawn_vehicles()
+        self._update_gaps()
+        self._change_lanes()
+        self._update_gaps()
+        self._update_vehicle_speeds()
+        self._advance_vehicles()
+        self._timestep_stoplights()
 
-        self.lane_changing()
+    def _timestep_stoplights(self):
+        for i in range(self.length):
+            if self.lanes[0][i].has_stoplight():
+                self.lanes[0][i].get_stoplight().timestep()
 
-        self.right_lane.update_gaps()
-        self.left_lane.update_gaps()
+    ### Simulation Controller
 
-        self.right_lane.update_vehicle_speeds()
-        self.left_lane.update_vehicle_speeds()
+    def simulate(self, steps):
+        print(self)
+        for _ in range(steps):
+            self._timestep()
+            print("")
+            print(self)
 
-        self.right_lane.advance_vehicles()
-        self.left_lane.advance_vehicles()
+    ### Miscellaneous
 
-        self.timestep_stoplights()
+    def __str__(self):
+        s = ''
+        for i in [1,0]:
+            for cell in self.lanes[i]:
+                if cell.has_red_stoplight():
+                    s += '.'
+                if cell.has_stoplight() and cell.has_vehicle():
+                    s += '|X|'
+                elif cell.has_stoplight():
+                    s += '| |'
+                elif cell.has_vehicle():
+                    s += 'X'
+                else:
+                    s += '_'
+            s += '\n'
+        return s
 
-    def lane_changing(self):
-        self.lane_change_helper(self.left_lane, self.right_lane)
-        self.lane_change_helper(self.right_lane, self.left_lane)
-
-    def lane_change_helper(self, lane, other_lane):
-        vehicles = lane.get_vehicles()
-        for loc, vehicle in vehicles.items():
-            other_lane_gap = other_lane.check_gap(loc)
-            other_lane_back_gap = other_lane.look_back(loc)
-            if other_lane_gap > vehicle.get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
-                lane.remove_vehicle(loc)
-                other_lane.add_vehicle(loc, vehicle)
-
-    def simulate(self, timesteps, freq=1):
-        print(self.left_lane)
-        print(self.right_lane)
-        print('')
-        for i in range(timesteps):
-            self.timestep()
-            if i%freq == 0:
-                print(self.left_lane)
-                print(self.right_lane)
-                print('')

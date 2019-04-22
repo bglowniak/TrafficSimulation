@@ -23,8 +23,17 @@ class Cell():
         if self.stoplight is not None:
             return not self.stoplight.is_green
 
+    def has_green_stoplight(self):
+        if self.stoplight is not None:
+            return self.stoplight.is_green
+        return False
+
     def has_obstruction(self):
         return self.has_vehicle() or self.has_red_stoplight()
+
+    def has_side_obstruction(self):
+        #for a sidestreet checking if it can go
+        return self.has_vehicle() or self.has_green_stoplight()
 
     def set_vehicle(self, v):
         if not isinstance(v, Vehicle):
