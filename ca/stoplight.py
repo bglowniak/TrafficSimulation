@@ -7,6 +7,7 @@ class Stoplight():
         boolean is_green: TRUE if the light is green, FALSE if red
         integer counter: time since last light change
         integer green_time: length of time for light to stay green
+        integer red_time: length of timem for light to stay red
 
     Functions:
         None set_green(): sets is_green to TRUE
@@ -14,18 +15,12 @@ class Stoplight():
         None timestep(): increments counter, toggles light if necessary
     '''
 
-    def __init__(self, is_green, green_time=None, red_time=None, input_prob = INPUT_PROBABILITY):
+    def __init__(self, is_green=True, green_time=10, red_time=5, input_prob = INPUT_PROBABILITY):
         self.is_green = is_green
-        if green_time is not None:
-            self.green_time = green_time
-        else:
-            self.green_time = 10
-        if red_time is not None:
-            self.red_time = red_time
-        else:
-            self.red_time = 5
-        self.counter = 0
+        self.green_time = green_time
+        self.red_time = red_time
         self.input_prob = input_prob
+        self.counter = 0
         
     def set_green(self):
         self.is_green = True
