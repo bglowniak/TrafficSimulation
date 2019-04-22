@@ -30,6 +30,7 @@ class Two_Lane():
         self.stoplights = stoplights
         self._add_stoplights(stoplights)
         self._make_input_queues(stoplights)
+        self._set_exits(stoplights)
         self.stats = Stats()
 
     ### Setup Methods
@@ -59,13 +60,22 @@ class Two_Lane():
         for loc in self.stoplights.keys():
             self.queues.append([Queue(), Queue(), loc])
 
+    def _set_exits(self, stoplights):
+        self.exits = []
+        for loc in self.stoplights.keys():
+            self.exits.append(loc)
+        self.exits.append(self.length-1)
+
     ### Car Generation Methods
 
     def _spawn_vehicles(self):
         if self.sim_time == 0:
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
         while self.next_vehicle.get_enter_time() <= self.sim_time:
-            self._enqueue_vehicle(self.next_vehicle)
+            if self.next_vehicle.get_source() == 0:
+                self._place_vehicle_qless(self.next_vehicle)
+            else:
+                self._enqueue_vehicle(self.next_vehicle)
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
 
     def _enqueue_vehicle(self, vehicle):
@@ -81,22 +91,16 @@ class Two_Lane():
 
     def _place_vehicle(self, loc, lane, car_queue):
         #takes a location, lane, and queue. If the spot is empty, dequeues one car and puts it there
-        if loc == 0:
-            if not self.lanes[lane][loc].has_vehicle():
-                if not car_queue.empty():
-                    car = car_queue.get()
-                    self.lanes[lane][loc].set_vehicle(car)
-        else:
-            if not self.lanes[lane][loc].has_vehicle():
-                if self.lanes[lane][loc].has_red_stoplight():
-                    if not car_queue.empty():
-                        car = car_queue.get()
-                        self.lanes[lane][loc].set_vehicle(car)
-
-        ''' if not self.lanes[lane][loc].has_side_obstruction():
+        if not self.lanes[lane][loc].has_vehicle() and not self.lanes[lane][loc].has_green_stoplight():
             if not car_queue.empty():
                 car = car_queue.get()
-                self.lanes[lane][loc].set_vehicle(car)'''
+                self.lanes[lane][loc].set_vehicle(car)
+    
+    def _place_vehicle_qless(self, vehicle):
+        lane = vehicle.get_source_lane()
+        loc = vehicle.get_source()
+        if not self.lanes[lane][loc].has_vehicle():
+            self.lanes[lane][loc].set_vehicle(vehicle)
 
     ### Vehicle and Cell Gaps
 
@@ -152,7 +156,7 @@ class Two_Lane():
                     cell.get_vehicle().update_speed()
 
     def _advance_vehicles(self):
-        for lane in range(1):
+        for lane in [0,1]:
             vehicle_list = {}
             for i in range(self.length):
                 if self.lanes[lane][i].has_vehicle():
@@ -160,7 +164,9 @@ class Two_Lane():
                     loc = i + vehicle.get_speed()
                     vehicle_list.update({loc: vehicle})
             for loc, vehicle in vehicle_list.items():
-                if loc < self.length:
+                if loc >= self.exits[vehicle.get_dest() - 1] - 1:
+                    self.stats.exit_simulation(self.sim_time, vehicle)
+                elif loc < self.length:
                     self.lanes[lane][loc].set_vehicle(vehicle)
                 else:
                     self.stats.exit_simulation(self.sim_time, vehicle)
@@ -204,8 +210,6 @@ class Two_Lane():
         s = ''
         for i in [1,0]:
             for cell in self.lanes[i]:
-                if cell.has_red_stoplight():
-                    s += '.'
                 if cell.has_stoplight() and cell.has_vehicle():
                     s += '|X|'
                 elif cell.has_stoplight():
