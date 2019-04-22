@@ -8,13 +8,21 @@ class Stats():
         self.vehicle_exit_times = []
 
     def get_interarrival(self):
-        return 5
+        return 37
 
     def get_source(self):
-        if random.random() < .8:
+        '''r = random.random()
+        if r < .5:
             return 0
-        else:
+        elif r < .7:
             return 1
+        elif r < .8:
+            return 2
+        elif r < .9:
+            return 3
+        else:
+            return 4'''
+        return 0
 
     def generate_vehicle(self, sim_time):
         time = sim_time + self.get_interarrival()
@@ -25,4 +33,9 @@ class Stats():
         return Vehicle(time, speed, source, dest, source_lane)
 
     def exit_simulation(self, sim_time, vehicle):
-        self.vehicle_exit_times.append(sim_time)
+        if sim_time < 500:
+            return
+        self.vehicle_exit_times.append(sim_time - vehicle.get_enter_time())
+
+    def calculate_stats(self):
+        return sum(self.vehicle_exit_times)/ len(self.vehicle_exit_times)

@@ -62,13 +62,11 @@ class Two_Lane():
     ### Car Generation Methods
 
     def _spawn_vehicles(self):
-        #unfinished
-        vehicle = self.stats.generate_vehicle(self.sim_time)
-        self._enqueue_vehicle(vehicle)
-        while (vehicle.get_enter_time() < self.sim_time):
-            vehicle = self.stats.generate_vehicle(self.sim_time)
-            self._enqueue_vehicle(vehicle)
-        self._place_vehicles()
+        if self.sim_time == 0:
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
+        while self.next_vehicle.get_enter_time() <= self.sim_time:
+            self._enqueue_vehicle(self.next_vehicle)
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
 
     def _enqueue_vehicle(self, vehicle):
         intersection_num = vehicle.get_source()
@@ -83,10 +81,22 @@ class Two_Lane():
 
     def _place_vehicle(self, loc, lane, car_queue):
         #takes a location, lane, and queue. If the spot is empty, dequeues one car and puts it there
-        if not self.lanes[lane][loc].has_side_obstruction():
+        if loc == 0:
+            if not self.lanes[lane][loc].has_vehicle():
+                if not car_queue.empty():
+                    car = car_queue.get()
+                    self.lanes[lane][loc].set_vehicle(car)
+        else:
+            if not self.lanes[lane][loc].has_vehicle():
+                if self.lanes[lane][loc].has_red_stoplight():
+                    if not car_queue.empty():
+                        car = car_queue.get()
+                        self.lanes[lane][loc].set_vehicle(car)
+
+        ''' if not self.lanes[lane][loc].has_side_obstruction():
             if not car_queue.empty():
                 car = car_queue.get()
-                self.lanes[lane][loc].set_vehicle(car)
+                self.lanes[lane][loc].set_vehicle(car)'''
 
     ### Vehicle and Cell Gaps
 
@@ -162,12 +172,15 @@ class Two_Lane():
         Controlls one timestep of the simulation. ORDER MATTERS!!!
         '''
         self._spawn_vehicles()
+        self._place_vehicles()
         self._update_gaps()
         self._change_lanes()
         self._update_gaps()
         self._update_vehicle_speeds()
         self._advance_vehicles()
         self._timestep_stoplights()
+        self.sim_time += 1
+        
 
     def _timestep_stoplights(self):
         for i in range(self.length):
@@ -176,12 +189,14 @@ class Two_Lane():
 
     ### Simulation Controller
 
-    def simulate(self, steps):
+    def simulate(self, steps, skips=1):
         print(self)
-        for _ in range(steps):
+        for i in range(steps):
             self._timestep()
-            print("")
-            print(self)
+            if i % skips == 0:
+                print("")
+                print(self)
+        print(self.stats.calculate_stats())
 
     ### Miscellaneous
 
