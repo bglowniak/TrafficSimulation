@@ -54,3 +54,6 @@ class Vehicle:
         hours = distance / self.velocity
         return hours * 3600
 
+    def __str__(self):
+        return "Vehicle(enter_time=" + str(self.enter_time) + " velocity=" + str(self.velocity) + " entrance=" + str(self.entrance) + " exit=" + str(self.exit) + " direction=" + str(self.direction) + " lane=" + str(self.lane) + ")"
+
