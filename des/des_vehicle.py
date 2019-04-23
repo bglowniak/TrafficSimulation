@@ -3,7 +3,12 @@ from des_intersection import Intersections
 
 class Vehicle:
     vehicle_num = 0
-    def __init__(self, enter_time=0.0, enter_location=Intersections.TENTH, exit_location=Intersections.FOURTEENTH):
+    def __init__(self, enter_time=0.0,
+                 velocity=25.0,
+                 enter_location=Intersections.TENTH,
+                 exit_location=Intersections.FOURTEENTH,
+                 direction=True,
+                 lane=True):
         # id to associate with vehicle
         self.vehicle_id = Vehicle.vehicle_num
         Vehicle.vehicle_num += 1
@@ -21,7 +26,13 @@ class Vehicle:
         self.exit = exit_location
 
         # the speed of the vehicle in MPH (constant value for now)
-        self.speed = 30.0
+        self.velocity = velocity
+
+        # True for Northbound, False for E/W
+        self.direction = direction
+
+        # True for left, False for right
+        self.lane = lane
 
     def get_id(self):
         return self.vehicle_id

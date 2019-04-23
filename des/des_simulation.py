@@ -1,10 +1,10 @@
 # des_simulation.py initializes the simulation, maintains state variables, defines the events of the simulation, and sets up the initial scheduling of events
-
 import time
 import random
 from des_engine import *
 from des_intersection import *
 from des_vehicle import *
+from simulation_input import spawn_vehicle
 
 ####################
 # DEFINE VARIABLES #
@@ -31,10 +31,50 @@ last_event_time = 0.0
 schedule_new_events = True
 
 final_departure_time = 0.0
-
+test_val = 0
+max_val = 10
 #################
 # DEFINE EVENTS #
 #################
+
+class SimulationArrival(Event):
+    def __init__(self, timestamp, vehicle):
+        self.timestamp = timestamp
+        self.vehicle = vehicle
+
+    def execute(self):
+        if self.vehicle.entrance == 0:
+            intersection = Intersections.TENTH
+        else:
+            intersection = Intersections(self.vehicle.entrance)
+
+        self.result = "Vehicle " + str(self.vehicle.get_id()) + " has entered the simulation."
+
+        # schedule intersection this vehicle will first approach
+        #schedule_event(IntersectionArrival(self.timestamp, intersection, self.vehicle))
+
+        # schedule simulation arrival for new vehicle
+        vehicle_data = spawn_vehicle()
+
+        direction = (vehicle_data[2] == 0) # if arriving before 10th, NB. Otherwise, E/W
+
+        new_vehicle = Vehicle(enter_time=self.timestamp + vehicle_data[0],
+                velocity=vehicle_data[1],
+                enter_location=vehicle_data[2],
+                exit_location=vehicle_data[3],
+                direction=direction,
+                lane=vehicle_data[4])
+
+        schedule_event(SimulationArrival(new_vehicle.enter_time, new_vehicle))
+
+class SimulationExit(Event):
+    def __init__(self, timestamp, vehicle):
+        self.timestamp = timestamp
+        self.vehicle = vehicle
+
+    def execute(self):
+        # compute statistics
+        self.result = "Vehicle " + (self.vehicle.get_id()) + " has left the simulation. Statistics: (not yet implemented)."
 
 class IntersectionArrival(Event):
     def __init__(self, timestamp, intersection_id, vehicle):
@@ -43,35 +83,28 @@ class IntersectionArrival(Event):
         self.vehicle = vehicle
 
     def execute(self):
-        # see note on line 17 about global vars
-        global num_events
-        global vehicles_waiting
-        global vehicles_entered
-
-        num_events += 1
-
-        if self.intersection_id is Intersections.TENTH and schedule_new_events:
-            vehicles_entered += 1
-
-            # instantiate new vehicle and schedule next arrival based on distributions
-            arrival_time = simulation_time() + random.randint(10, 60) # fancy random number oooo between 10 and 60 seconds
-            new_arrival = Vehicle(enter_time=arrival_time) # will travel full length of corridor by default (10th -> 14th)
-            schedule_event(IntersectionArrival(arrival_time, Intersections.TENTH, new_arrival))
-
         stoplight_state = intersection_list[self.intersection_id].get_state()
 
         self.result = "Vehicle " + str(self.vehicle.get_id()) + " has arrived at " + str(self.intersection_id) + " at time " + str(self.timestamp) + "."
 
+        # stoplight is GREEN and direction is NORTH --> travel through
+        # stoplight is RED and direction is NORTH --> Queue
+        # stoplight is GREEN and direction is E/W --> Queue
+        # stoplight is RED and direction is E/W --> travel through/enter the corridor
+
         if stoplight_state:
-            # schedule departure event for vehicle
-            if schedule_new_events:
-                schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, self.vehicle))
-            self.result += " The light is GREEN."
-        else:
-            # queue at intersection
-            intersection_list[self.intersection_id].queue_vehicle(self.vehicle)
-            self.result += " The light is RED and the vehicle is waiting."
-            vehicles_waiting += 1
+
+
+
+    def queue_vehicle():
+        # queue at intersection
+        intersection_list[self.intersection_id].queue_vehicle(self.vehicle)
+        self.result += " The light is RED and the vehicle is waiting."
+
+    def intersection_clear():
+        # schedule departure event for vehicle
+        schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, self.vehicle))
+        self.result += " The light is GREEN."
 
 class IntersectionDeparture(Event):
     def __init__(self, timestamp, intersection_id, vehicle):
@@ -153,6 +186,18 @@ class StoplightChange(Event):
 # BEGIN SIMULATION #
 ####################
 
+vehicle_data = spawn_vehicle()
+new_vehicle = Vehicle(enter_time=0.0,
+                      velocity=vehicle_data[1],
+                      enter_location=vehicle_data[2],
+                      exit_location=vehicle_data[3],
+                      direction=(vehicle_data[2] == 0),
+                      lane=vehicle_data[4])
+
+schedule_event(SimulationArrival(0.0, new_vehicle))
+
+run_simulation()
+'''
 #schedule stoplight changes (13th has no stoplight). All stoplights start as RED.
 schedule_event(StoplightChange(simulation_time(), Intersections.TENTH))
 schedule_event(StoplightChange(simulation_time(), Intersections.ELEVENTH))
@@ -173,4 +218,4 @@ print("Total Time for " + str(MAX_DEPARTURES) + " vehicles to exit the system: "
 print("Total Duration (Simulation Time): " + str(simulation_time()) + " seconds")
 print("Number of Events: " + str(num_events))
 print("Vehicles Entered: " + str(vehicles_entered))
-print("Vehicles Departed: " + str(vehicles_departed))
+print("Vehicles Departed: " + str(vehicles_departed))'''

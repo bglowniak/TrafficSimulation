@@ -5,21 +5,27 @@ from enum import Enum
 
 # define an enum for our discrete set of intersections
 class Intersections(Enum):
-    TENTH = 0
-    ELEVENTH = 1
-    TWELFTH = 2
-    THIRTEENTH = 3
-    FOURTEENTH = 4
+    TENTH = 1
+    ELEVENTH = 2
+    TWELFTH = 3
+    THIRTEENTH = 4
+    FOURTEENTH = 5
 
 # we will represent our simulation as a chain of intersections (nodes in a network)
 class Intersection:
     def __init__(self, intersection_id, green, red, distance_to_next):
-        # IGNORING YELLOW AND LEFT TURNS FOR NOW, ONLY DOING ONE LANE
+        # IGNORING YELLOW AND LEFT TURNS
         self.intersection_id = intersection_id
         self.stoplight_state = True # True = Green, False = Red
         self.green_duration = green
         self.red_duration = red
-        self.lane_queue = Queue()
+
+        # define lane queues
+        self.left_lane_queue = Queue() # Northbound, Left
+        self.right_lane_queue = Queue() # Northbound, Right
+        self.ew_queue = Queue() # E/W, Left
+        self.ew_right_queue = Queue() # E/W, Right
+
         self.distance_to_next = distance_to_next
 
     # eventually will implement state machine for each intersection (LT and TR?)
