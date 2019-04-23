@@ -14,4 +14,4 @@ s14 = Stoplight(True, 36, 48)
 lights = {20: s10, 40: s11, 80: s12, 110: s13, 140: s14}
 
 road1 = Two_Lane(150, lights)
-road1.simulate(1000, 5)
+road1.simulate(10000, 100)

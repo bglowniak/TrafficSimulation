@@ -6,10 +6,11 @@ from cell import Cell
 from queue import Queue
 import random
 
+### Model Parameters
+
 BACK_GAP = 2
 LANE_CHANGE_PROB = .5
-
-SCALE_FACTOR = .3
+SCALE_FACTOR = .5
 
 class Two_Lane():
 
@@ -74,10 +75,19 @@ class Two_Lane():
         if self.sim_time == 0:
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
         while self.next_vehicle.get_enter_time() <= self.sim_time:
+
+            ### Choose This for no queueing
+
+            self._place_vehicle_qless(self.next_vehicle)
+
+            ### Choose this for queueing
+            '''
             if self.next_vehicle.get_source() == 0:
                 self._place_vehicle_qless(self.next_vehicle)
             else:
                 self._enqueue_vehicle(self.next_vehicle)
+            '''
+            
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
 
     def _enqueue_vehicle(self, vehicle):

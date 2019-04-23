@@ -1,12 +1,15 @@
 from vehicle import Vehicle
 import random
 from simulation_input import spawn_vehicle
+from output_analysis import analyze
+
 
 class Stats():
 
     def __init__(self):
         self.seed = 0
-        self.vehicle_exit_times = []
+        self.sim_times = []
+        self.vehicle_traversal_times = []
         self.vehicle_starts = []
         self.vehicle_ends = []
 
@@ -24,13 +27,12 @@ class Stats():
         return Vehicle(sim_time + inter_arrival, velocity, entrance, exit_point, self.pick_lane())
 
     def exit_simulation(self, sim_time, vehicle):
-        if sim_time < 100:
-            return
-        self.vehicle_exit_times.append(sim_time - vehicle.get_enter_time())
+        
+        self.sim_times.append(sim_time)
+        self.vehicle_traversal_times.append(
+            sim_time - vehicle.get_enter_time())
         self.vehicle_starts.append(vehicle.get_source())
         self.vehicle_ends.append(vehicle.get_dest())
 
     def calculate_stats(self):
-        avg = sum(self.vehicle_exit_times)/ len(self.vehicle_exit_times)
-        print('average: {:.2f}'.format(avg))
-        return
+        analyze(self.sim_times, self.vehicle_traversal_times, self.vehicle_starts, self.vehicle_ends)
