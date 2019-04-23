@@ -37,6 +37,9 @@ class Vehicle:
     def get_id(self):
         return self.vehicle_id
 
+    def change_lanes(self):
+        self.lane = not self.lane
+
     def set_exit_time(self, time):
         self.exit_time = time
 

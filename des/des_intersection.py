@@ -22,12 +22,13 @@ class Directions(Enum):
 
 # we will represent our simulation as a chain of intersections (nodes in a network)
 class Intersection:
-    def __init__(self, intersection_id, green, red, distance_to_next):
+    def __init__(self, intersection_id, green, red, distance_to_next, length):
         # IGNORING YELLOW AND LEFT TURNS
         self.intersection_id = intersection_id
         self.stoplight_state = True # True = Green, False = Red
         self.green_duration = green
         self.red_duration = red
+        self.length = length
 
         # define lane queues
         self.north_left_queue = Queue() # Northbound, Left
@@ -36,6 +37,9 @@ class Intersection:
         self.ew_right_queue = Queue() # E/W, Right
 
         self.distance_to_next = distance_to_next
+
+        self.last_left_departure_time = 0.0
+        self.last_right_departure_time = 0.0
 
     # eventually will implement state machine for each intersection (LT and TR?)
     def toggle(self):
@@ -109,33 +113,45 @@ twelfth_red_duration = 37.3
 fourteenth_green_duration = 36.2
 fourteenth_red_duration = 47.7
 
-# distances (in miles) were determined by using online mapping tools
-tenth_to_eleventh = 0.1056
-eleventh_to_twelfth = 0.0870
-twelfth_to_thirteenth = 0.0808
-thirteenth_to_fourteenth = 0.0746
+# section distances (in miles) were pulled from TrajectoryDataDescription.pdf
+tenth_to_eleventh = 0.0814
+eleventh_to_twelfth = 0.0781
+twelfth_to_thirteenth = 0.0668
+thirteenth_to_fourteenth = 0.0652
+
+# intersection lengths (also pulled from TrajectoryDataDescription)
+tenth_length = 0.0189
+eleventh_length = 0.0246
+twelfth_length = 0.0140
+thirteenth_length = 0.0126
+fourteenth_length = 0.0226
 
 # instantiate intersections in dictionary for use by other modules
 intersection_list = {
     Intersections.TENTH: Intersection(Intersections.TENTH,
                                       tenth_green_duration,
                                       tenth_red_duration,
-                                      tenth_to_eleventh),
+                                      tenth_to_eleventh,
+                                      tenth_length),
 
     Intersections.ELEVENTH: Intersection(Intersections.ELEVENTH,
                                          eleventh_green_duration,
                                          eleventh_red_duration,
-                                         eleventh_to_twelfth),
+                                         eleventh_to_twelfth,
+                                         eleventh_length),
 
     Intersections.TWELFTH: Intersection(Intersections.TWELFTH,
                                         twelfth_green_duration,
                                         twelfth_red_duration,
-                                        twelfth_to_thirteenth),
+                                        twelfth_to_thirteenth,
+                                        twelfth_length),
 
     Intersections.THIRTEENTH: Intersection(Intersections.THIRTEENTH, 0, 0,
-                                           thirteenth_to_fourteenth),
+                                           thirteenth_to_fourteenth,
+                                           thirteenth_length),
 
     Intersections.FOURTEENTH: Intersection(Intersections.FOURTEENTH,
                                            fourteenth_green_duration,
-                                           fourteenth_red_duration, 0)
+                                           fourteenth_red_duration, 0,
+                                           fourteenth_length)
 }

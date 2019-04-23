@@ -60,9 +60,11 @@ class SimulationState():
         print("Vehicles Entered: " + str(self.vehicles_entered))
         print("Vehicles Departed: " + str(self.vehicles_departed))
 
-        print("Travel Times: " + str(self.travel_times))
+        #print("Travel Times: " + str(self.travel_times))
+        avg = sum(self.travel_times[800:]) / len(self.travel_times[800:])
+        print("Average Travel Time: " + str(avg))
 
-state = SimulationState()
+state = SimulationState(max_departures=1000)
 
 #################
 # DEFINE EVENTS #
@@ -154,14 +156,23 @@ class IntersectionArrival(Event):
         state.increment_events()
 
     def queue_vehicle(self):
+        this_lane_size = self.intersection.num_queueing(self.vehicle.lane, self.vehicle.direction)
+        other_lane_size = self.intersection.num_queueing(not self.vehicle.lane, self.vehicle.direction)
+
+        if other_lane_size < (0.6 * this_lane_size):
+            self.vehicle.change_lanes()
+            if state.debug_flag():
+                self.result += " The vehicle changed lanes."
+
         # queue at intersection
         self.intersection.queue_vehicle(self.vehicle, self.vehicle.lane, self.vehicle.direction)
         if state.debug_flag():
             self.result += " The vehicle is waiting."
 
     def intersection_clear(self):
+        travel_time = self.vehicle.calc_travel_time(self.intersection.length)
         # schedule departure event for vehicle
-        schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, self.vehicle))
+        schedule_event(IntersectionDeparture(self.timestamp + travel_time, self.intersection_id, self.vehicle))
         if state.debug_flag():
             self.result += " The vehicle will pass through."
 
@@ -177,6 +188,15 @@ class IntersectionDeparture(Event):
         self.result = ""
 
         if not state.sim_still_running():
+            return
+
+        # check if stoplight has turned red before departure runs
+        stoplight_state = self.intersection.get_state()
+        veh_dir = self.vehicle.direction
+        if (veh_dir and not stoplight_state) or (not veh_dir and stoplight_state) and self.intersection_id is not Intersections.THIRTEENTH:
+            self.intersection.queue_vehicle(self.vehicle, self.vehicle.lane, veh_dir)
+            if state.debug_flag():
+                self.result += "Vehicle " + str(self.vehicle.get_id()) + " attempted to depart " + str(self.intersection_id) + " but the light had changed. Requeued."
             return
 
         if self.intersection_id.value == self.vehicle.exit or self.intersection_id is Intersections.FOURTEENTH:
@@ -223,22 +243,28 @@ class StoplightChange(Event):
         right_cars = self.intersection.num_queueing(Lanes.RIGHT.value, direction)
         total_cars_queueing = left_cars + right_cars
 
+        left_time = random.uniform(2, 3)
+        right_time = random.uniform(2, 3)
+
         # dequeue all cars at current intersection and schedule intersection departure for each
-        # assume that all cars leave a stoplight instantaneously for now (no delays while cars start to accelerate)
         while left_cars > 0 or right_cars > 0:
             # can add delay to next intersection based on order in queue
             if left_cars > 0:
                 left_vehicle = self.intersection.dequeue_vehicle(Lanes.LEFT.value, direction)
                 if left_vehicle is not None:
-                    schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, left_vehicle))
+                    travel_time = left_vehicle.calc_travel_time(self.intersection.length)
+                    schedule_event(IntersectionDeparture(self.timestamp + left_time + travel_time, self.intersection_id, left_vehicle))
                     left_cars -= 1
+                    left_time += random.uniform(0.5, 2)
 
 
             if right_cars > 0:
                 right_vehicle = self.intersection.dequeue_vehicle(Lanes.RIGHT.value, direction)
                 if right_vehicle is not None:
-                    schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, right_vehicle))
+                    travel_time = right_vehicle.calc_travel_time(self.intersection.length)
+                    schedule_event(IntersectionDeparture(self.timestamp + right_time + travel_time, self.intersection_id, right_vehicle))
                     right_cars -= 1
+                    right_time += random.uniform(0.5, 2)
 
         self.intersection.toggle()
         state.increment_events()
@@ -251,7 +277,6 @@ class StoplightChange(Event):
 ####################
 
 vehicle_data = spawn_vehicle()
-#first_vehicle = Vehicle()
 
 first_vehicle = Vehicle(enter_time=vehicle_data[0],
                 velocity=vehicle_data[1],
@@ -263,10 +288,10 @@ first_vehicle = Vehicle(enter_time=vehicle_data[0],
 schedule_event(SimulationArrival(first_vehicle.enter_time, first_vehicle))
 
 # schedule stoplight changes (13th has no stoplight). All stoplights start as RED.
-schedule_event(StoplightChange(simulation_time(), Intersections.TENTH))
-schedule_event(StoplightChange(simulation_time(), Intersections.ELEVENTH))
-schedule_event(StoplightChange(simulation_time(), Intersections.TWELFTH))
-schedule_event(StoplightChange(simulation_time(), Intersections.FOURTEENTH))
+schedule_event(StoplightChange(simulation_time() + round(random.uniform(0, 5)), Intersections.TENTH))
+schedule_event(StoplightChange(simulation_time() + round(random.uniform(0, 5)), Intersections.ELEVENTH))
+schedule_event(StoplightChange(simulation_time() + round(random.uniform(0, 5)), Intersections.TWELFTH))
+schedule_event(StoplightChange(simulation_time() + round(random.uniform(0, 5)), Intersections.FOURTEENTH))
 
 start_time = time.time()
 run_simulation()
