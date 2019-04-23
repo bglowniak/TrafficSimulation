@@ -9,6 +9,8 @@ import random
 BACK_GAP = 2
 LANE_CHANGE_PROB = .5
 
+SCALE_FACTOR = .3
+
 class Two_Lane():
 
     '''
@@ -70,18 +72,19 @@ class Two_Lane():
 
     def _spawn_vehicles(self):
         if self.sim_time == 0:
-            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
         while self.next_vehicle.get_enter_time() <= self.sim_time:
             if self.next_vehicle.get_source() == 0:
                 self._place_vehicle_qless(self.next_vehicle)
             else:
                 self._enqueue_vehicle(self.next_vehicle)
-            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
 
     def _enqueue_vehicle(self, vehicle):
         intersection_num = vehicle.get_source()
         lane = vehicle.get_source_lane()
-        self.queues[intersection_num][lane].put(vehicle)
+        if self.queues[intersection_num][lane].qsize() < 5:
+            self.queues[intersection_num][lane].put(vehicle)
 
     def _place_vehicles(self):
         #queues is a dict with key loc, value list, index 0 is right lane queue, index 1 is left lane queue
@@ -202,7 +205,7 @@ class Two_Lane():
             if i % skips == 0:
                 print("")
                 print(self)
-        print(self.stats.calculate_stats())
+        self.stats.calculate_stats()
 
     ### Miscellaneous
 
@@ -220,4 +223,3 @@ class Two_Lane():
                     s += '_'
             s += '\n'
         return s
-

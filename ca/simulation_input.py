@@ -39,11 +39,15 @@ def compute_from_exp(mean):
     return -mean * math.log(1 - rand)
 
 # returns interarrival in seconds
-def compute_interarrival(exp=False):
+def compute_interarrival(exp=False, sf=1):
+    if sf == 0:
+        raise ValueError("Scale Factor cannot be Zero!!")
     if exp:
         val = compute_from_exp(interarrival_mean)
     else:
         val = compute_from_emp_dist(interarrival_emp_dist)
+
+    val = val*sf
 
     return round(val / 1000)
 
@@ -82,8 +86,8 @@ def generate_exit_point():
 
 # ======= GENERATE VEHICLE ========
 
-def spawn_vehicle(exp=False):
-    ia = compute_interarrival(exp)
+def spawn_vehicle(exp=False, sf=1):
+    ia = compute_interarrival(exp, sf)
     vel = compute_vehicle_velocity()
 
     entrance = generate_entrance_point()
