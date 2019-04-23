@@ -5,8 +5,8 @@ class Vehicle:
     vehicle_num = 0
     def __init__(self, enter_time=0.0,
                  velocity=25.0,
-                 enter_location=Intersections.TENTH,
-                 exit_location=Intersections.FOURTEENTH,
+                 enter_location=0,
+                 exit_location=6,
                  direction=Directions.NORTH,
                  lane=Lanes.LEFT):
         # id to associate with vehicle
@@ -25,7 +25,7 @@ class Vehicle:
         # the intersection which the vehicle will exit from
         self.exit = exit_location
 
-        # the speed of the vehicle in MPH (constant value for now)
+        # the speed of the vehicle in MPH
         self.velocity = velocity
 
         # True for Northbound, False for E/W
@@ -51,6 +51,6 @@ class Vehicle:
 
     # returns the time in seconds it takes to travel a certain distance
     def calc_travel_time(self, distance):
-        hours = distance / self.speed
+        hours = distance / self.velocity
         return hours * 3600
 

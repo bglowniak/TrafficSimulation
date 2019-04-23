@@ -18,7 +18,7 @@ from simulation_input import spawn_vehicle
 # may create a container object that keeps track of all these vars that is passed into events so that they don't have to access global vars - defined as SimulationState
 
 MAX_DEPARTURES = 5 # how many vehicles exit the simulation before it stops scheduling events
-DEBUG = False # whether or not to include print statements for all events
+DEBUG = True # whether or not to include print statements for all events
 
 num_events = 0
 vehicles_entered = 0
@@ -51,9 +51,9 @@ class SimulationArrival(Event):
         self.result = "Vehicle " + str(self.vehicle.get_id()) + " has entered the simulation."
 
         # schedule intersection this vehicle will first approach
-        #schedule_event(IntersectionArrival(self.timestamp, intersection, self.vehicle))
+        schedule_event(IntersectionArrival(self.timestamp, intersection, self.vehicle))
 
-        # schedule simulation arrival for new vehicle
+    '''    # schedule simulation arrival for new vehicle
         vehicle_data = spawn_vehicle()
 
         direction = (vehicle_data[2] == 0) # if arriving before 10th, NB. Otherwise, E/W
@@ -65,7 +65,7 @@ class SimulationArrival(Event):
                 direction=direction,
                 lane=vehicle_data[4])
 
-        schedule_event(SimulationArrival(new_vehicle.enter_time, new_vehicle))
+        schedule_event(SimulationArrival(new_vehicle.enter_time, new_vehicle))'''
 
 class SimulationExit(Event):
     def __init__(self, timestamp, vehicle):
@@ -74,7 +74,7 @@ class SimulationExit(Event):
 
     def execute(self):
         # compute statistics
-        self.result = "Vehicle " + (self.vehicle.get_id()) + " has left the simulation. Statistics: (not yet implemented)."
+        self.result = "Vehicle " + str(self.vehicle.get_id()) + " has left the simulation. Statistics: (not yet implemented)."
 
 class IntersectionArrival(Event):
     def __init__(self, timestamp, intersection_id, vehicle):
@@ -117,9 +117,10 @@ class IntersectionDeparture(Event):
         self.vehicle = vehicle
 
     def execute(self):
-        if self.intersection_id is self.vehicle.exit:
+        if self.intersection_id.value == self.vehicle.exit or self.intersection_id is Intersections.FOURTEENTH:
             self.vehicle.set_exit_time(self.timestamp)
             self.result = "Vehicle " + str(self.vehicle.get_id()) + " has departed " + str(self.intersection_id) + " (Exit Point)."
+            schedule_event(SimulationExit(self.timestamp, self.vehicle))
         else:
             self.result = "Vehicle " + str(self.vehicle.get_id()) + " has departed " + str(self.intersection_id) + "."
 
@@ -135,63 +136,62 @@ class StoplightChange(Event):
         self.timestamp = timestamp
         self.intersection_id = intersection_id
         self.intersection = intersection_list[self.intersection_id]
-        self.current_state = self.intersection.get_state()
 
     def execute(self):
         global DEBUG
         self.result = ""
 
-        if self.current_state:
-            next_timestamp = simulation_time() + current.get_red_duration()
-            schedule_event(StoplightChange(next_timestamp, self.intersection_id))
-
-            if DEBUG:
-                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to RED."
+        if self.intersection.get_state():
+            next = "RED"
+            next_timestamp = simulation_time() + self.intersection.get_red_duration()
+            direction = Directions.EW.value # allow any EW cars queuing to travel into the corridor
         else:
-            next_timestamp = simulation_time() + current.get_green_duration()
-            schedule_event(StoplightChange(next_timestamp, self.intersection_id))
+            next = "GREEN"
+            next_timestamp = simulation_time() + self.intersection.get_green_duration()
+            direction = Directions.NORTH.value # allow any north cars queuing to travel through or off the corridor
+
+        schedule_event(StoplightChange(next_timestamp, self.intersection_id))
+
+        left_cars = self.intersection.num_queueing(Lanes.LEFT.value, direction)
+        right_cars = self.intersection.num_queueing(Lanes.RIGHT.value, direction)
+        total_cars_queueing = left_cars + right_cars
+
+        # dequeue all cars at current intersection and schedule intersection departure for each
+        # assume that all cars leave a stoplight instantaneously for now (no delays while cars start to accelerate)
+        while left_cars > 0 or right_cars > 0:
+            # can add delay to next intersection based on order in queue
+            if left_cars > 0:
+                left_vehicle = self.intersection.dequeue_vehicle(Lanes.LEFT.value, direction)
+                if left_vehicle is not None:
+                    schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, left_vehicle))
+                    left_cars -= 1
 
 
-            num_cars = current.num_queueing()
+            if right_cars > 0:
+                right_vehicle = self.intersection.dequeue_vehicle(Lanes.RIGHT.value, direction)
+                if right_vehicle is not None:
+                    schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, right_vehicle))
+                    right_cars -= 1
 
-            # dequeue all cars at current intersection and schedule intersection departure for each
-            # assume that all cars leave a stoplight instantaneously for now (no delays while cars start to accelerate)
-            while current.num_queueing() > 0:
-                # can add delay to next intersection based on order in queue
-                vehicle = current.dequeue_vehicle()
-                schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, vehicle))
-                vehicles_waiting -= 1
+        self.intersection.toggle()
 
-            if DEBUG:
-                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to GREEN. There were " + str(num_cars) + " waiting."
-
-        current.toggle()
+        if DEBUG:
+            self.result = "Stoplight at " + str(self.intersection_id) + " has changed to " + next + ". There were " + str(total_cars_queueing) + " waiting."
 
 ####################
 # BEGIN SIMULATION #
 ####################
 
-vehicle_data = spawn_vehicle()
-new_vehicle = Vehicle(enter_time=0.0,
-                      velocity=vehicle_data[1],
-                      enter_location=vehicle_data[2],
-                      exit_location=vehicle_data[3],
-                      direction=(vehicle_data[2] == 0),
-                      lane=vehicle_data[4])
+#vehicle_data = spawn_vehicle()
+first_vehicle = Vehicle()
 
-schedule_event(SimulationArrival(0.0, new_vehicle))
+schedule_event(SimulationArrival(0.0, first_vehicle))
 
-run_simulation()
-'''
-#schedule stoplight changes (13th has no stoplight). All stoplights start as RED.
+# schedule stoplight changes (13th has no stoplight). All stoplights start as RED.
 schedule_event(StoplightChange(simulation_time(), Intersections.TENTH))
 schedule_event(StoplightChange(simulation_time(), Intersections.ELEVENTH))
 schedule_event(StoplightChange(simulation_time(), Intersections.TWELFTH))
 schedule_event(StoplightChange(simulation_time(), Intersections.FOURTEENTH))
-
-# first vehicle starts at 10th St and will depart at 14th St at time 0.0
-first_vehicle = Vehicle(enter_time=simulation_time())
-schedule_event(IntersectionArrival(simulation_time(), Intersections.TENTH, first_vehicle))
 
 start_time = time.time()
 run_simulation()
@@ -199,8 +199,8 @@ end_time = time.time()
 
 print("Statistics: ")
 print("Total Runtime: " + str(end_time - start_time) + " seconds")
-print("Total Time for " + str(MAX_DEPARTURES) + " vehicles to exit the system: " + str(final_departure_time) + " seconds")
+# print("Total Time for " + str(MAX_DEPARTURES) + " vehicles to exit the system: " + str(final_departure_time) + " seconds")
 print("Total Duration (Simulation Time): " + str(simulation_time()) + " seconds")
-print("Number of Events: " + str(num_events))
-print("Vehicles Entered: " + str(vehicles_entered))
-print("Vehicles Departed: " + str(vehicles_departed))'''
+# print("Number of Events: " + str(num_events))
+# print("Vehicles Entered: " + str(vehicles_entered))
+# print("Vehicles Departed: " + str(vehicles_departed))'''
