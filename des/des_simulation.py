@@ -156,6 +156,14 @@ class IntersectionArrival(Event):
         state.increment_events()
 
     def queue_vehicle(self):
+        this_lane_size = self.intersection.num_queueing(self.vehicle.lane, self.vehicle.direction)
+        other_lane_size = self.intersection.num_queueing(not self.vehicle.lane, self.vehicle.direction)
+
+        if other_lane_size < (0.6 * this_lane_size):
+            self.vehicle.change_lanes()
+            if state.debug_flag():
+                self.result += " The vehicle changed lanes."
+
         # queue at intersection
         self.intersection.queue_vehicle(self.vehicle, self.vehicle.lane, self.vehicle.direction)
         if state.debug_flag():
@@ -187,8 +195,8 @@ class IntersectionDeparture(Event):
         veh_dir = self.vehicle.direction
         if (veh_dir and not stoplight_state) or (not veh_dir and stoplight_state) and self.intersection_id is not Intersections.THIRTEENTH:
             self.intersection.queue_vehicle(self.vehicle, self.vehicle.lane, veh_dir)
-            #if state.debug_flag():
-            self.result += "Vehicle " + str(self.vehicle.get_id()) + " attempted to depart " + str(self.intersection_id) + " but the light had changed. Requeued."
+            if state.debug_flag():
+                self.result += "Vehicle " + str(self.vehicle.get_id()) + " attempted to depart " + str(self.intersection_id) + " but the light had changed. Requeued."
             return
 
         if self.intersection_id.value == self.vehicle.exit or self.intersection_id is Intersections.FOURTEENTH:
@@ -247,16 +255,16 @@ class StoplightChange(Event):
                     travel_time = left_vehicle.calc_travel_time(self.intersection.length)
                     schedule_event(IntersectionDeparture(self.timestamp + left_time + travel_time, self.intersection_id, left_vehicle))
                     left_cars -= 1
-                    left_time += random.uniform(2, 3)
+                    left_time += random.uniform(0.5, 2)
 
 
             if right_cars > 0:
                 right_vehicle = self.intersection.dequeue_vehicle(Lanes.RIGHT.value, direction)
                 if right_vehicle is not None:
-                    travel_time = left_vehicle.calc_travel_time(self.intersection.length)
+                    travel_time = right_vehicle.calc_travel_time(self.intersection.length)
                     schedule_event(IntersectionDeparture(self.timestamp + right_time + travel_time, self.intersection_id, right_vehicle))
                     right_cars -= 1
-                    right_time += random.uniform(2, 3)
+                    right_time += random.uniform(0.5, 2)
 
         self.intersection.toggle()
         state.increment_events()

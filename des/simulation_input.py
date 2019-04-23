@@ -50,7 +50,7 @@ def compute_interarrival(exp=False):
 # returns velocity in mph
 def compute_vehicle_velocity():
     value = compute_from_emp_dist(vel_emp_dist)
-    while value < 1:
+    while value < 15: # if value is < 10 mph
         value = compute_from_emp_dist(vel_emp_dist)
 
     return round(value * (3600 / 5280)) # convert ft/s to mph

@@ -28,7 +28,7 @@ class Intersection:
         self.stoplight_state = True # True = Green, False = Red
         self.green_duration = green
         self.red_duration = red
-        self.intersection_length = length
+        self.length = length
 
         # define lane queues
         self.north_left_queue = Queue() # Northbound, Left
@@ -37,6 +37,9 @@ class Intersection:
         self.ew_right_queue = Queue() # E/W, Right
 
         self.distance_to_next = distance_to_next
+
+        self.last_left_departure_time = 0.0
+        self.last_right_departure_time = 0.0
 
     # eventually will implement state machine for each intersection (LT and TR?)
     def toggle(self):
