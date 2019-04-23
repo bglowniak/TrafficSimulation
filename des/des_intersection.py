@@ -5,21 +5,35 @@ from enum import Enum
 
 # define an enum for our discrete set of intersections
 class Intersections(Enum):
-    TENTH = 0
-    ELEVENTH = 1
-    TWELFTH = 2
-    THIRTEENTH = 3
-    FOURTEENTH = 4
+    TENTH = 1
+    ELEVENTH = 2
+    TWELFTH = 3
+    THIRTEENTH = 4
+    FOURTEENTH = 5
+
+class Lanes(Enum):
+    LEFT = True
+    RIGHT = False
+
+class Directions(Enum):
+    NORTH = True
+    EW = False
 
 # we will represent our simulation as a chain of intersections (nodes in a network)
 class Intersection:
     def __init__(self, intersection_id, green, red, distance_to_next):
-        # IGNORING YELLOW AND LEFT TURNS FOR NOW, ONLY DOING ONE LANE
+        # IGNORING YELLOW AND LEFT TURNS
         self.intersection_id = intersection_id
         self.stoplight_state = True # True = Green, False = Red
         self.green_duration = green
         self.red_duration = red
-        self.lane_queue = Queue()
+
+        # define lane queues
+        self.north_left_queue = Queue() # Northbound, Left
+        self.north_right_queue = Queue() # Northbound, Right
+        self.ew_left_queue = Queue() # E/W, Left
+        self.ew_right_queue = Queue() # E/W, Right
+
         self.distance_to_next = distance_to_next
 
     # eventually will implement state machine for each intersection (LT and TR?)
@@ -35,17 +49,38 @@ class Intersection:
     def get_red_duration(self):
         return self.red_duration
 
-    def queue_vehicle(self, vehicle):
-        self.lane_queue.put(vehicle)
+    def queue_vehicle(self, vehicle, lane, direction):
+        if direction and lane: # northbound left
+            self.north_left_queue.put(vehicle)
+        elif direction and not lane: # northbound right
+            self.north_right_queue.put(vehicle)
+        elif not direction and lane: # EW left
+            self.ew_left_queue.put(vehicle)
+        elif not direction and not lane: # EW right
+            self.ew_right_queue.put(vehicle)
 
-    def num_queueing(self):
-        return self.lane_queue.qsize()
+    def num_queueing(self, lane, direction):
+        if direction and lane: # northbound left
+            return self.north_left_queue.qsize()
+        elif direction and not lane: # northbound right
+            return self.north_right_queue.qsize()
+        elif not direction and lane: # EW left
+            return self.ew_left_queue.qsize()
+        elif not direction and not lane: # EW right
+            return self.ew_right_queue.qsize()
 
-    def dequeue_vehicle(self):
-        if self.lane_queue.empty():
+    def dequeue_vehicle(self, lane, direction):
+        try:
+            if direction and lane: # northbound left
+                return self.north_left_queue.get()
+            elif direction and not lane: # northbound right
+                return self.north_right_queue.get()
+            elif not direction and lane: # EW left
+                return self.ew_left_queue.get()
+            elif not direction and not lane: # EW right
+                return self.ew_right_queue.get()
+        except Queue.Empty:
             return None
-
-        return self.lane_queue.get()
 
     def next_intersection(self):
         if self.intersection_id is Intersections.FOURTEENTH:

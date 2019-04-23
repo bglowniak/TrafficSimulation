@@ -42,4 +42,4 @@ def run_simulation():
         current.execute()
         result = current.get_result()
         if not result == "":
-            print(result)
+            print(str(current_time) + ": " + result)

@@ -92,4 +92,9 @@ def spawn_vehicle(exp=False):
     while exit <= entrance:
         exit = generate_exit_point()
 
-    return (ia, vel, entrance, exit)
+    if random.uniform(0, 1) < 0.5:
+        lane = True
+    else:
+        lane = False
+
+    return (ia, vel, entrance, exit, lane)
