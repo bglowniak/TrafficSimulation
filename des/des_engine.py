@@ -38,7 +38,7 @@ def run_simulation():
     global current_time
     while not future_event_list.empty():
         current = future_event_list.get()
-        current_time = current.get_timestamp()
+        current_time = round(current.get_timestamp(), 3)
         current.execute()
         result = current.get_result()
         if not result == "":
