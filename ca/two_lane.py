@@ -19,9 +19,11 @@ class Two_Lane():
 
     Attributes:
         length: integer length of the road
-        right_lane: array of cells
-        left_lane: array of cells
+        sim_time: integer simulation time
+        lanes: array of length 2 containing an array for each of the right lane (index 0) and left lane (index 1)
         queues: dictionary mapping location to a list of queues for cars, index 0 is right lane, index 1 is left lane
+        stoplights: dictionary mapping location to stoplight objects
+        stats: a Stats() class object recording statistics for the simulation
     '''
 
     def __init__(self, length, stoplights):
@@ -144,17 +146,13 @@ class Two_Lane():
     def _change_lanes(self):
         for loc in range(self.length):
             #lane 0
-            if self.lanes[0][loc].has_vehicle():
-                other_lane_gap = self.lanes[1][loc].get_gap()
-                other_lane_back_gap = self._look_back(1, loc)
-                if other_lane_gap > self.lanes[0][loc].get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
-                    self._switch_lanes(0, loc)
-            #lane 1
-            if self.lanes[1][loc].has_vehicle():
-                other_lane_gap = self.lanes[0][loc].get_gap()
-                other_lane_back_gap = self._look_back(0, loc)
-                if other_lane_gap > self.lanes[1][loc].get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
-                    self._switch_lanes(1, loc)
+            for i in [0,1]:
+                if self.lanes[i][loc].has_vehicle():
+                    other_lane = (i+1)%2
+                    other_lane_gap = self.lanes[other_lane][loc].get_gap()
+                    other_lane_back_gap = self._look_back(other_lane, loc)
+                    if other_lane_gap > self.lanes[i][loc].get_gap() and other_lane_back_gap >= BACK_GAP and random.random() < LANE_CHANGE_PROB:
+                        self._switch_lanes(i, loc)
 
     def _switch_lanes(self, lane, loc):
         vehicle = self.lanes[lane][loc].remove_vehicle()

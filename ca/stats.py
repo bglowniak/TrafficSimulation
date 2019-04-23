@@ -7,7 +7,6 @@ from output_analysis import analyze
 class Stats():
 
     def __init__(self):
-        self.seed = 0
         self.sim_times = []
         self.vehicle_traversal_times = []
         self.vehicle_starts = []
@@ -27,7 +26,6 @@ class Stats():
         return Vehicle(sim_time + inter_arrival, velocity, entrance, exit_point, self.pick_lane())
 
     def exit_simulation(self, sim_time, vehicle):
-        
         self.sim_times.append(sim_time)
         self.vehicle_traversal_times.append(
             sim_time - vehicle.get_enter_time())
