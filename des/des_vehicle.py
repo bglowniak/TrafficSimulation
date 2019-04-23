@@ -1,5 +1,5 @@
 # vehicle class, keeps track of arrival time and exit time
-from des_intersection import Intersections
+from des_intersection import Intersections, Directions, Lanes
 
 class Vehicle:
     vehicle_num = 0
@@ -7,8 +7,8 @@ class Vehicle:
                  velocity=25.0,
                  enter_location=Intersections.TENTH,
                  exit_location=Intersections.FOURTEENTH,
-                 direction=True,
-                 lane=True):
+                 direction=Directions.NORTH,
+                 lane=Lanes.LEFT):
         # id to associate with vehicle
         self.vehicle_id = Vehicle.vehicle_num
         Vehicle.vehicle_num += 1
@@ -45,6 +45,9 @@ class Vehicle:
             return self.exit_time - self.enter_time
         else:
             return -1
+
+    def turn_north(self):
+        self.direction = Directions.NORTH
 
     # returns the time in seconds it takes to travel a certain distance
     def calc_travel_time(self, distance):

@@ -80,28 +80,31 @@ class IntersectionArrival(Event):
     def __init__(self, timestamp, intersection_id, vehicle):
         self.timestamp = timestamp
         self.intersection_id = intersection_id
+        self.intersection = intersection_list[self.intersection_id]
         self.vehicle = vehicle
 
     def execute(self):
-        stoplight_state = intersection_list[self.intersection_id].get_state()
+        stoplight_state = self.intersection.get_state()
 
-        self.result = "Vehicle " + str(self.vehicle.get_id()) + " has arrived at " + str(self.intersection_id) + " at time " + str(self.timestamp) + "."
+        self.result = "Vehicle " + str(self.vehicle.get_id()) + " has arrived at " + str(self.intersection_id) + "."
 
-        # stoplight is GREEN and direction is NORTH --> travel through
-        # stoplight is RED and direction is NORTH --> Queue
-        # stoplight is GREEN and direction is E/W --> Queue
-        # stoplight is RED and direction is E/W --> travel through/enter the corridor
+        veh_dir = self.vehicle.direction
 
-        if stoplight_state:
+        if (stoplight_state and veh_dir) or not (stoplight_state or veh_dir):
+            # stoplight is GREEN and direction is NORTH --> travel through
+            # stoplight is RED and direction is E/W --> travel through/enter the corridor
+            self.intersection_clear()
+        elif (not stoplight_state and veh_dir) or (stoplight_state and not veh_dir):
+            # stoplight is RED and direction is NORTH --> Queue
+            # stoplight is GREEN and direction is E/W --> Queue
+            self.queue_vehicle()
 
-
-
-    def queue_vehicle():
+    def queue_vehicle(self):
         # queue at intersection
-        intersection_list[self.intersection_id].queue_vehicle(self.vehicle)
+        self.intersection.queue_vehicle(self.vehicle, self.vehicle.lane, self.vehicle.direction)
         self.result += " The light is RED and the vehicle is waiting."
 
-    def intersection_clear():
+    def intersection_clear(self):
         # schedule departure event for vehicle
         schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, self.vehicle))
         self.result += " The light is GREEN."
@@ -110,75 +113,57 @@ class IntersectionDeparture(Event):
     def __init__(self, timestamp, intersection_id, vehicle):
         self.timestamp = timestamp
         self.intersection_id = intersection_id
+        self.intersection = intersection_list[self.intersection_id]
         self.vehicle = vehicle
 
     def execute(self):
-        # temporary - see note on line 17 about global vars
-        global num_events
-        global vehicles_departed
-        global MAX_DEPARTURES
-        global schedule_new_events
-        global final_departure_time
-
-        num_events += 1
-
-        if self.intersection_id is Intersections.FOURTEENTH:
+        if self.intersection_id is self.vehicle.exit:
             self.vehicle.set_exit_time(self.timestamp)
-            self.result = "Vehicle " + str(self.vehicle.get_id()) + " has left the simulation at timestamp " + str(self.timestamp) + ". Duration: " + str(self.vehicle.calc_total_time())
-
-            vehicles_departed += 1
-            if vehicles_departed == MAX_DEPARTURES:
-                final_departure_time = self.timestamp
-                schedule_new_events = False
+            self.result = "Vehicle " + str(self.vehicle.get_id()) + " has departed " + str(self.intersection_id) + " (Exit Point)."
         else:
-            self.result = "Vehicle " + str(self.vehicle.get_id()) + " has departed intersection " + str(self.intersection_id) + " at time " + str(self.timestamp) + "."
+            self.result = "Vehicle " + str(self.vehicle.get_id()) + " has departed " + str(self.intersection_id) + "."
 
-            if schedule_new_events:
-                next_intersection = intersection_list[self.intersection_id].next_intersection()
-                distance = intersection_list[self.intersection_id].get_distance_to_next()
-                arrival_time = self.timestamp + self.vehicle.calc_travel_time(distance)
-                schedule_event(IntersectionArrival(arrival_time, next_intersection, self.vehicle))
+            self.vehicle.turn_north()
+
+            next_intersection = self.intersection.next_intersection()
+            distance = self.intersection.get_distance_to_next()
+            arrival_time = self.timestamp + self.vehicle.calc_travel_time(distance)
+            schedule_event(IntersectionArrival(arrival_time, next_intersection, self.vehicle))
 
 class StoplightChange(Event):
     def __init__(self, timestamp, intersection_id):
         self.timestamp = timestamp
         self.intersection_id = intersection_id
+        self.intersection = intersection_list[self.intersection_id]
+        self.current_state = self.intersection.get_state()
 
     def execute(self):
-        # temporary - see note on line 17 about global vars
-        global num_events
-        global vehicles_waiting
+        global DEBUG
+        self.result = ""
 
-        num_events += 1
-
-        current = intersection_list[self.intersection_id]
-        if current.get_state():
-            if schedule_new_events:
-                next_timestamp = simulation_time() + current.get_red_duration()
-                schedule_event(StoplightChange(next_timestamp, self.intersection_id))
+        if self.current_state:
+            next_timestamp = simulation_time() + current.get_red_duration()
+            schedule_event(StoplightChange(next_timestamp, self.intersection_id))
 
             if DEBUG:
-                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to RED at time " + str(self.timestamp) + "."
-            else:
-                self.result = ""
+                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to RED."
         else:
-            num_cars = current.num_queueing()
-            if schedule_new_events:
-                next_timestamp = simulation_time() + current.get_green_duration()
-                schedule_event(StoplightChange(next_timestamp, self.intersection_id))
+            next_timestamp = simulation_time() + current.get_green_duration()
+            schedule_event(StoplightChange(next_timestamp, self.intersection_id))
 
-                # dequeue all cars at current intersection and schedule intersection departure for each
-                # assume that all cars leave a stoplight instantaneously for now (no delays while cars start to accelerate)
-                while current.num_queueing() > 0:
-                    # can add delay to next intersection based on order in queue
-                    vehicle = current.dequeue_vehicle()
-                    schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, vehicle))
-                    vehicles_waiting -= 1
+
+            num_cars = current.num_queueing()
+
+            # dequeue all cars at current intersection and schedule intersection departure for each
+            # assume that all cars leave a stoplight instantaneously for now (no delays while cars start to accelerate)
+            while current.num_queueing() > 0:
+                # can add delay to next intersection based on order in queue
+                vehicle = current.dequeue_vehicle()
+                schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, vehicle))
+                vehicles_waiting -= 1
 
             if DEBUG:
-                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to GREEN at time " + str(self.timestamp) + ". There were " + str(num_cars) + " waiting."
-            else:
-                self.result = ""
+                self.result = "Stoplight at " + str(self.intersection_id) + " has changed to GREEN. There were " + str(num_cars) + " waiting."
 
         current.toggle()
 
