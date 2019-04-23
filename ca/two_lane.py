@@ -11,7 +11,7 @@ import random
 BACK_GAP = 2
 LANE_CHANGE_PROB = .5
 SCALE_FACTOR = 1
-Q_SIZE = 3
+Q_SIZE = 5
 
 class Two_Lane():
 
@@ -85,10 +85,10 @@ class Two_Lane():
 
             ### Choose this for queueing
             
-            if self.next_vehicle.get_source() == 0:
-                self._place_vehicle_qless(self.next_vehicle)
-            else:
-                self._enqueue_vehicle(self.next_vehicle)
+            #if self.next_vehicle.get_source() == 0:
+            #    self._place_vehicle_qless(self.next_vehicle)
+            #else:
+            self._enqueue_vehicle(self.next_vehicle)
             
             
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
@@ -207,13 +207,18 @@ class Two_Lane():
 
     ### Simulation Controller
 
-    def simulate(self, steps, skips=1):
-        print(self)
-        for i in range(steps):
-            self._timestep()
-            if i % skips == 0:
-                print("")
-                print(self)
+    def simulate(self, steps, skips=1, vis=True):
+        if vis:
+            print(self)
+            for i in range(steps):
+                self._timestep()
+                if i % skips == 0:
+                    print("")
+                    print(self)
+        else:
+            for i in range(steps):
+                self._timestep()
+        
         self.stats.calculate_stats()
 
     ### Miscellaneous

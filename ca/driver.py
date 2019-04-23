@@ -11,7 +11,9 @@ s11 = Stoplight(True, 42, 56)
 s12 = Stoplight(True, 62, 36)
 s13 = Stoplight(True, 20, 3)
 s14 = Stoplight(True, 36, 48)
-lights = {20: s10, 40: s11, 80: s12, 110: s13, 140: s14}
+lights = {10: s10, 35: s11, 61: s12, 81: s13, 101: s14}
 
-road1 = Two_Lane(150, lights)
-road1.simulate(10000, 100)
+
+
+road1 = Two_Lane(111, lights)
+road1.simulate(5000, 100, False)

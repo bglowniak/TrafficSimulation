@@ -18,12 +18,20 @@ class Stats():
         else:
             return 1
 
+    def choose_max_speed(self):
+        if random.random() < .15:
+            return 2
+        elif random.random() < .4:
+            return 3
+        else:
+            return 4
+
     def generate_vehicle(self, sim_time, sf=1):
         inter_arrival, velocity, entrance, exit_point = spawn_vehicle(sf=sf)
         velocity = velocity//5
-        if velocity > 5:
-            velocity = 5
-        return Vehicle(sim_time + inter_arrival, velocity, entrance, exit_point, self.pick_lane())
+        if velocity > 4:
+            velocity = 4
+        return Vehicle(sim_time + inter_arrival, velocity, self.choose_max_speed(), entrance, exit_point, self.pick_lane())
 
     def exit_simulation(self, sim_time, vehicle):
         self.sim_times.append(sim_time)
