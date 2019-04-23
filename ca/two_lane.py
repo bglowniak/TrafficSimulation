@@ -30,6 +30,7 @@ class Two_Lane():
         self.stoplights = stoplights
         self._add_stoplights(stoplights)
         self._make_input_queues(stoplights)
+        self._set_exits(stoplights)
         self.stats = Stats()
 
     ### Setup Methods
@@ -59,16 +60,23 @@ class Two_Lane():
         for loc in self.stoplights.keys():
             self.queues.append([Queue(), Queue(), loc])
 
+    def _set_exits(self, stoplights):
+        self.exits = []
+        for loc in self.stoplights.keys():
+            self.exits.append(loc)
+        self.exits.append(self.length-1)
+
     ### Car Generation Methods
 
     def _spawn_vehicles(self):
-        #unfinished
-        vehicle = self.stats.generate_vehicle(self.sim_time)
-        self._enqueue_vehicle(vehicle)
-        while (vehicle.get_enter_time() < self.sim_time):
-            vehicle = self.stats.generate_vehicle(self.sim_time)
-            self._enqueue_vehicle(vehicle)
-        self._place_vehicles()
+        if self.sim_time == 0:
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
+        while self.next_vehicle.get_enter_time() <= self.sim_time:
+            if self.next_vehicle.get_source() == 0:
+                self._place_vehicle_qless(self.next_vehicle)
+            else:
+                self._enqueue_vehicle(self.next_vehicle)
+            self.next_vehicle = self.stats.generate_vehicle(self.sim_time)
 
     def _enqueue_vehicle(self, vehicle):
         intersection_num = vehicle.get_source()
@@ -83,10 +91,16 @@ class Two_Lane():
 
     def _place_vehicle(self, loc, lane, car_queue):
         #takes a location, lane, and queue. If the spot is empty, dequeues one car and puts it there
-        if not self.lanes[lane][loc].has_side_obstruction():
+        if not self.lanes[lane][loc].has_vehicle() and not self.lanes[lane][loc].has_green_stoplight():
             if not car_queue.empty():
                 car = car_queue.get()
                 self.lanes[lane][loc].set_vehicle(car)
+    
+    def _place_vehicle_qless(self, vehicle):
+        lane = vehicle.get_source_lane()
+        loc = vehicle.get_source()
+        if not self.lanes[lane][loc].has_vehicle():
+            self.lanes[lane][loc].set_vehicle(vehicle)
 
     ### Vehicle and Cell Gaps
 
@@ -142,7 +156,7 @@ class Two_Lane():
                     cell.get_vehicle().update_speed()
 
     def _advance_vehicles(self):
-        for lane in range(1):
+        for lane in [0,1]:
             vehicle_list = {}
             for i in range(self.length):
                 if self.lanes[lane][i].has_vehicle():
@@ -150,7 +164,9 @@ class Two_Lane():
                     loc = i + vehicle.get_speed()
                     vehicle_list.update({loc: vehicle})
             for loc, vehicle in vehicle_list.items():
-                if loc < self.length:
+                if loc >= self.exits[vehicle.get_dest() - 1] - 1:
+                    self.stats.exit_simulation(self.sim_time, vehicle)
+                elif loc < self.length:
                     self.lanes[lane][loc].set_vehicle(vehicle)
                 else:
                     self.stats.exit_simulation(self.sim_time, vehicle)
@@ -162,12 +178,15 @@ class Two_Lane():
         Controlls one timestep of the simulation. ORDER MATTERS!!!
         '''
         self._spawn_vehicles()
+        self._place_vehicles()
         self._update_gaps()
         self._change_lanes()
         self._update_gaps()
         self._update_vehicle_speeds()
         self._advance_vehicles()
         self._timestep_stoplights()
+        self.sim_time += 1
+        
 
     def _timestep_stoplights(self):
         for i in range(self.length):
@@ -176,12 +195,14 @@ class Two_Lane():
 
     ### Simulation Controller
 
-    def simulate(self, steps):
+    def simulate(self, steps, skips=1):
         print(self)
-        for _ in range(steps):
+        for i in range(steps):
             self._timestep()
-            print("")
-            print(self)
+            if i % skips == 0:
+                print("")
+                print(self)
+        print(self.stats.calculate_stats())
 
     ### Miscellaneous
 
@@ -189,8 +210,6 @@ class Two_Lane():
         s = ''
         for i in [1,0]:
             for cell in self.lanes[i]:
-                if cell.has_red_stoplight():
-                    s += '.'
                 if cell.has_stoplight() and cell.has_vehicle():
                     s += '|X|'
                 elif cell.has_stoplight():
