@@ -162,8 +162,9 @@ class IntersectionArrival(Event):
             self.result += " The vehicle is waiting."
 
     def intersection_clear(self):
+        travel_time = self.vehicle.calc_travel_time(self.intersection.length)
         # schedule departure event for vehicle
-        schedule_event(IntersectionDeparture(self.timestamp, self.intersection_id, self.vehicle))
+        schedule_event(IntersectionDeparture(self.timestamp + travel_time, self.intersection_id, self.vehicle))
         if state.debug_flag():
             self.result += " The vehicle will pass through."
 
@@ -234,8 +235,8 @@ class StoplightChange(Event):
         right_cars = self.intersection.num_queueing(Lanes.RIGHT.value, direction)
         total_cars_queueing = left_cars + right_cars
 
-        left_time = random.uniform(1, 2)
-        right_time = random.uniform(1, 2)
+        left_time = random.uniform(2, 3)
+        right_time = random.uniform(2, 3)
 
         # dequeue all cars at current intersection and schedule intersection departure for each
         while left_cars > 0 or right_cars > 0:
@@ -243,17 +244,19 @@ class StoplightChange(Event):
             if left_cars > 0:
                 left_vehicle = self.intersection.dequeue_vehicle(Lanes.LEFT.value, direction)
                 if left_vehicle is not None:
-                    schedule_event(IntersectionDeparture(self.timestamp + left_time, self.intersection_id, left_vehicle))
+                    travel_time = left_vehicle.calc_travel_time(self.intersection.length)
+                    schedule_event(IntersectionDeparture(self.timestamp + left_time + travel_time, self.intersection_id, left_vehicle))
                     left_cars -= 1
-                    left_time += random.uniform(1, 2)
+                    left_time += random.uniform(2, 3)
 
 
             if right_cars > 0:
                 right_vehicle = self.intersection.dequeue_vehicle(Lanes.RIGHT.value, direction)
                 if right_vehicle is not None:
-                    schedule_event(IntersectionDeparture(self.timestamp + right_time, self.intersection_id, right_vehicle))
+                    travel_time = left_vehicle.calc_travel_time(self.intersection.length)
+                    schedule_event(IntersectionDeparture(self.timestamp + right_time + travel_time, self.intersection_id, right_vehicle))
                     right_cars -= 1
-                    right_time += random.uniform(1, 2)
+                    right_time += random.uniform(2, 3)
 
         self.intersection.toggle()
         state.increment_events()
