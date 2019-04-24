@@ -39,21 +39,29 @@ def compute_from_exp(mean):
     return -mean * math.log(1 - rand)
 
 # returns interarrival in seconds
-def compute_interarrival(exp=False):
+def compute_interarrival(exp=False, sf=1):
+    if sf == 0:
+        raise ValueError("Scale Factor cannot be Zero!!")
     if exp:
         val = compute_from_exp(interarrival_mean)
     else:
         val = compute_from_emp_dist(interarrival_emp_dist)
+
+    val = val * sf
 
     return round(val / 1000)
 
 # returns velocity in mph
 def compute_vehicle_velocity():
     value = compute_from_emp_dist(vel_emp_dist)
-    while value < 15: # if value is < 10 mph
+    while value < 1:
         value = compute_from_emp_dist(vel_emp_dist)
 
-    return round(value * (3600 / 5280)) # convert ft/s to mph
+    mph = round(value * (3600 / 5280)) # convert ft/s to mph
+    if mph < 10:
+        mph += 15
+
+    return mph
 
 
 # ======= DISCRETE DISTRIBUTIONS =======

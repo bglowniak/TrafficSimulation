@@ -3,14 +3,13 @@
 from queue import Queue
 from enum import Enum
 
-# define an enum for our discrete set of intersections
+# define enums for our discrete sets of intersections, lanes, and directions
 class Intersections(Enum):
     TENTH = 1
     ELEVENTH = 2
     TWELFTH = 3
     THIRTEENTH = 4
     FOURTEENTH = 5
-
 
 class Lanes(Enum):
     LEFT = True
@@ -38,8 +37,8 @@ class Intersection:
 
         self.distance_to_next = distance_to_next
 
-        self.last_left_departure_time = 0.0
-        self.last_right_departure_time = 0.0
+        #self.last_left_departure_time = 0.0
+        #self.last_right_departure_time = 0.0
 
     # eventually will implement state machine for each intersection (LT and TR?)
     def toggle(self):

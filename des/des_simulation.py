@@ -6,16 +6,19 @@ from des_intersection import *
 from des_vehicle import *
 from simulation_input import spawn_vehicle
 
+import numpy as np
+
 ####################
 # DEFINE VARIABLES #
 ####################
 
 # SimulationState keeps track of the various state variables and the progress of the simulation
 class SimulationState():
-    def __init__(self, debug_flag=False, max_departures=10):
+    def __init__(self, debug_flag=False, max_departures=10, use_exp=False):
 
-        self.DEBUG = debug_flag # how many vehicles exit the simulation before it stops scheduling event
-        self.MAX_DEPARTURES = max_departures # whether or not to include print statements for all events
+        self.DEBUG = debug_flag # whether or not to include print statements for all events
+        self.MAX_DEPARTURES = max_departures # how many vehicles exit the simulation before it stops scheduling events
+        self.EXP = use_exp # whether or not we use the exponential distribution for interarrival time
         self.num_events = 0
         self.vehicles_entered = 0
         self.vehicles_departed = 0
@@ -61,10 +64,14 @@ class SimulationState():
         print("Vehicles Departed: " + str(self.vehicles_departed))
 
         #print("Travel Times: " + str(self.travel_times))
-        avg = sum(self.travel_times[800:]) / len(self.travel_times[800:])
+        avg = sum(self.travel_times) / len(self.travel_times)
+        #avg = sum(self.travel_times[800:]) / len(self.travel_times[800:])
+        print("Minimum Travel Time: " + str(min(self.travel_times)))
+        print("Maximum Travel Time: " + str(max(self.travel_times)))
+        print("STD of TT: " + str(np.std(self.travel_times)))
         print("Average Travel Time: " + str(avg))
 
-state = SimulationState(max_departures=1000)
+state = SimulationState(debug_flag=True, max_departures=10, use_exp=False)
 
 #################
 # DEFINE EVENTS #
@@ -90,13 +97,13 @@ class SimulationArrival(Event):
         if state.debug_flag():
             self.result = str(self.vehicle) + " has entered the simulation."
 
-        vehicle_data = spawn_vehicle()
+        vehicle_data = spawn_vehicle(state.EXP)
         new_vehicle = Vehicle(enter_time=self.timestamp + vehicle_data[0],
-                velocity=vehicle_data[1],
-                enter_location=vehicle_data[2],
-                exit_location=vehicle_data[3],
-                direction=(vehicle_data[2] == 0),
-                lane=vehicle_data[4])
+                              velocity=vehicle_data[1],
+                              enter_location=vehicle_data[2],
+                              exit_location=vehicle_data[3],
+                              direction=(vehicle_data[2] == 0),
+                              lane=vehicle_data[4])
 
         schedule_event(IntersectionArrival(self.timestamp, intersection, self.vehicle))
         schedule_event(SimulationArrival(new_vehicle.enter_time, new_vehicle))
@@ -147,6 +154,7 @@ class IntersectionArrival(Event):
         if (stoplight_state and veh_dir) or not (stoplight_state or veh_dir) or self.intersection_id is Intersections.THIRTEENTH:
             # stoplight is GREEN and direction is NORTH --> travel through
             # stoplight is RED and direction is E/W --> travel through/enter the corridor
+            # intersection is THIRTEENTH --> No signal, clear to go
             self.intersection_clear()
         elif (not stoplight_state and veh_dir) or (stoplight_state and not veh_dir):
             # stoplight is RED and direction is NORTH --> Queue
@@ -159,7 +167,7 @@ class IntersectionArrival(Event):
         this_lane_size = self.intersection.num_queueing(self.vehicle.lane, self.vehicle.direction)
         other_lane_size = self.intersection.num_queueing(not self.vehicle.lane, self.vehicle.direction)
 
-        if other_lane_size < (0.6 * this_lane_size):
+        if other_lane_size < (0.75 * this_lane_size):
             self.vehicle.change_lanes()
             if state.debug_flag():
                 self.result += " The vehicle changed lanes."
@@ -255,7 +263,7 @@ class StoplightChange(Event):
                     travel_time = left_vehicle.calc_travel_time(self.intersection.length)
                     schedule_event(IntersectionDeparture(self.timestamp + left_time + travel_time, self.intersection_id, left_vehicle))
                     left_cars -= 1
-                    left_time += random.uniform(0.5, 2)
+                    left_time += random.uniform(0, 1)
 
 
             if right_cars > 0:
@@ -264,7 +272,7 @@ class StoplightChange(Event):
                     travel_time = right_vehicle.calc_travel_time(self.intersection.length)
                     schedule_event(IntersectionDeparture(self.timestamp + right_time + travel_time, self.intersection_id, right_vehicle))
                     right_cars -= 1
-                    right_time += random.uniform(0.5, 2)
+                    right_time += random.uniform(0, 1)
 
         self.intersection.toggle()
         state.increment_events()
@@ -276,14 +284,18 @@ class StoplightChange(Event):
 # BEGIN SIMULATION #
 ####################
 
-vehicle_data = spawn_vehicle()
+#statistics = []
+
+#for i in range(0, 10)
+
+vehicle_data = spawn_vehicle(state.EXP)
 
 first_vehicle = Vehicle(enter_time=vehicle_data[0],
-                velocity=vehicle_data[1],
-                enter_location=vehicle_data[2],
-                exit_location=vehicle_data[3],
-                direction=(vehicle_data[2] == 0),
-                lane=vehicle_data[4])
+                        velocity=vehicle_data[1],
+                        enter_location=vehicle_data[2],
+                        exit_location=vehicle_data[3],
+                        direction=(vehicle_data[2] == 0),
+                        lane=vehicle_data[4])
 
 schedule_event(SimulationArrival(first_vehicle.enter_time, first_vehicle))
 
