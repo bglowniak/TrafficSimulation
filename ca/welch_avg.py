@@ -2,12 +2,11 @@ import os.path
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def analyze(sim_times, traversal_times, sources, dests):
+def analyze(sim_times, traversal_times):
     if not os.path.exists('data_out'):
         os.makedirs('data_out')
 
-    df = pd.DataFrame({'sim_time': sim_times, 'traversal_time': traversal_times,
-                            'source': sources, 'dest': dests})
+    df = pd.DataFrame({'sim_time': sim_times, 'traversal_time': traversal_times})
     
     df['windowed_avg'] = df['traversal_time'].rolling(500, min_periods=10).mean()
 

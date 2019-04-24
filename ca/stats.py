@@ -41,4 +41,4 @@ class Stats():
         self.vehicle_ends.append(vehicle.get_dest())
 
     def calculate_stats(self):
-        analyze(self.sim_times, self.vehicle_traversal_times, self.vehicle_starts, self.vehicle_ends)
+        analyze(self.sim_times, self.vehicle_traversal_times)
