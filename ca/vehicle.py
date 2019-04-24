@@ -1,7 +1,7 @@
 from random import random
 
-MAX_SPEED = 5
-RANDOM_SLOWDOWN = .1
+MAX_SPEED = 4
+RANDOM_SLOWDOWN = .4
 
 class Vehicle():
     '''
@@ -15,10 +15,10 @@ class Vehicle():
     @attribute dest: The destination intersection
     '''
     
-    def __init__(self, time, speed=0, source=None, dest=None, source_lane=None):
+    def __init__(self, time, speed=0, max_speed=MAX_SPEED, source=None, dest=None, source_lane=None):
         self.enter_time = time
         self.speed = speed
-        self.max_speed = MAX_SPEED
+        self.max_speed = max_speed
         self.gap = 1
         self.source = source
         self.source_lane = source_lane
@@ -28,6 +28,8 @@ class Vehicle():
         return self.speed
 
     def update_speed(self):
+        if self.speed > self.max_speed:
+            self.speed = self.max_speed
         if self.speed < self.max_speed:
             self.speed += 1
         if self.speed > self.gap:
