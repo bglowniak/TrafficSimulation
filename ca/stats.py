@@ -1,7 +1,7 @@
 from vehicle import Vehicle
 import random
 from simulation_input import spawn_vehicle
-from output_analysis import analyze
+from welch_avg import analyze
 
 
 class Stats():
