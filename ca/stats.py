@@ -34,6 +34,8 @@ class Stats():
         return Vehicle(sim_time + inter_arrival, velocity, self.choose_max_speed(), entrance, exit_point, self.pick_lane())
 
     def exit_simulation(self, sim_time, vehicle):
+        if sim_time < 500:
+            return
         self.sim_times.append(sim_time)
         self.vehicle_traversal_times.append(
             sim_time - vehicle.get_enter_time())

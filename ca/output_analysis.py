@@ -25,7 +25,7 @@ def analyze_NGSim_test_data():
     df.to_csv('ngsim//vehicle_travesal.csv')
 
 def produce_confidence_interval():
-    RUNS = 5
+    RUNS = 10
 
     runs = []
     for _ in range(RUNS):
@@ -64,9 +64,9 @@ def produce_confidence_interval():
 def plot_confidence_intervals(avg_avg, avg_err, std_avg, std_err):
     #avg_ngsim = 91.2
     plt.bar(['Mean', 'Standard Deviation'], [avg_avg, std_avg], width=.5, yerr=[avg_err, std_err], capsize=7)
+    plt.ylabel('Vehicle Transit Time in Seconds')
     plt.show()
 
 if __name__ == '__main__':
     #analyze_NGSim_test_data()
     produce_confidence_interval()
-    #plot_confidence_intervals()
