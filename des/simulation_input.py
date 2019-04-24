@@ -90,8 +90,8 @@ def generate_exit_point():
 
 # ======= GENERATE VEHICLE ========
 
-def spawn_vehicle(exp=False):
-    ia = compute_interarrival(exp)
+def spawn_vehicle(exp=False, sf=1):
+    ia = compute_interarrival(exp=exp, sf=sf)
     vel = compute_vehicle_velocity()
 
     entrance = generate_entrance_point()

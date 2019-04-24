@@ -5,9 +5,7 @@ from des_engine import *
 from des_intersection import *
 from des_vehicle import *
 from simulation_input import spawn_vehicle
-from welch_avg import analyze # used to compute Welch's Average
-
-import numpy as np
+#from welch_avg import analyze # used to compute Welch's Average
 
 ####################
 # DEFINE VARIABLES #
@@ -15,7 +13,7 @@ import numpy as np
 
 # SimulationState keeps track of the various state variables and the progress of the simulation
 class SimulationState():
-    def __init__(self, debug_flag=False, max_departures=10, use_exp=False):
+    def __init__(self, debug_flag=False, max_departures=10, use_exp=False, sf=1):
 
         self.DEBUG = debug_flag # whether or not to include print statements for all events
         self.MAX_DEPARTURES = max_departures # how many vehicles exit the simulation before it stops scheduling events
@@ -28,6 +26,8 @@ class SimulationState():
         self.final_departure_time = 0.0
         self.schedule_new_events = True
 
+        self.scale_factor = sf
+
         # CURRENTLY UNUSED
         self.vehicles_waiting = 0
         self.total_waiting_time = 0
@@ -37,6 +37,9 @@ class SimulationState():
 
     def stop_sim(self):
         self.schedule_new_events = False
+
+    def get_sf(self):
+        return self.scale_factor
 
     def add_travel_time(self, time):
         self.travel_times.append(time)
@@ -60,12 +63,7 @@ class SimulationState():
         return self.DEBUG
 
     def compute_stats(self, wallclock_start, wallclock_end):
-        avg = sum(self.travel_times) / len(self.travel_times)
-        std = np.std(self.travel_times)
-        print("avg: " + str(avg))
-        print("std: " + str(std))
-
-        '''print("Statistics: ")
+        print("Statistics: ")
         print("Total Runtime: " + str(wallclock_end - wallclock_start) + " seconds")
         print("Total Time for " + str(self.MAX_DEPARTURES) + " vehicles to exit the system: " + str(self.final_departure_time) + " seconds")
         print("Total Duration (Simulation Time): " + str(simulation_time()) + " seconds")
@@ -78,13 +76,12 @@ class SimulationState():
         #avg = sum(self.travel_times[800:]) / len(self.travel_times[800:])
         print("Minimum Travel Time: " + str(min(self.travel_times)))
         print("Maximum Travel Time: " + str(max(self.travel_times)))
-        print("STD of TT: " + str(np.std(self.travel_times)))
-        print("Average Travel Time: " + str(avg))'''
+        print("Average Travel Time: " + str(avg))
 
         # analyze(self.departure_times, self.travel_times)
 
 
-state = SimulationState(debug_flag=False, max_departures=1000, use_exp=False)
+state = SimulationState(debug_flag=False, max_departures=1000, use_exp=False, sf=0.7)
 
 #################
 # DEFINE EVENTS #
@@ -110,7 +107,7 @@ class SimulationArrival(Event):
         if state.debug_flag():
             self.result = str(self.vehicle) + " has entered the simulation."
 
-        vehicle_data = spawn_vehicle(state.EXP)
+        vehicle_data = spawn_vehicle(exp=state.EXP, sf=state.get_sf())
         new_vehicle = Vehicle(enter_time=self.timestamp + vehicle_data[0],
                               velocity=vehicle_data[1],
                               enter_location=vehicle_data[2],
@@ -139,7 +136,6 @@ class SimulationExit(Event):
             self.result = "Vehicle " + str(self.vehicle.get_id()) + " has left the simulation."
 
         self.vehicle.set_exit_time(self.timestamp)
-
         state.add_travel_time(self.vehicle.calc_total_time())
         state.add_departure_time(self.timestamp)
         state.increment_events()
@@ -301,7 +297,7 @@ class StoplightChange(Event):
 #statistics = []
 
 
-vehicle_data = spawn_vehicle(state.EXP)
+vehicle_data = spawn_vehicle(exp=state.EXP, sf=state.get_sf())
 
 first_vehicle = Vehicle(enter_time=vehicle_data[0],
                         velocity=vehicle_data[1],

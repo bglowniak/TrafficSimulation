@@ -1,7 +1,7 @@
 from vehicle import Vehicle
 import random
 from simulation_input import spawn_vehicle
-from welch_avg import analyze
+#from welch_avg import analyze
 
 
 class Stats():
@@ -42,5 +42,5 @@ class Stats():
         self.vehicle_starts.append(vehicle.get_source())
         self.vehicle_ends.append(vehicle.get_dest())
 
-    def calculate_stats(self):
-        analyze(self.sim_times, self.vehicle_traversal_times)
+    #def calculate_stats(self):
+    #    analyze(self.sim_times, self.vehicle_traversal_times)

@@ -51,7 +51,7 @@ class Two_Lane():
         #stoplights is a dictionary mapping locations to stoplights
         for loc in stoplights.keys():
             self._add_light(loc, stoplights[loc])
-    
+
     def _add_light(self, loc, light):
         if self.lanes[0][loc].has_stoplight():
             raise ValueError('Failed to add stoplight; cell is already has stoplight.')
@@ -84,13 +84,13 @@ class Two_Lane():
             #self._place_vehicle_qless(self.next_vehicle)
 
             ### Choose this for queueing
-            
+
             #if self.next_vehicle.get_source() == 0:
             #    self._place_vehicle_qless(self.next_vehicle)
             #else:
             self._enqueue_vehicle(self.next_vehicle)
-            
-            
+
+
             self.next_vehicle = self.stats.generate_vehicle(self.sim_time, sf=SCALE_FACTOR)
 
     def _enqueue_vehicle(self, vehicle):
@@ -111,7 +111,7 @@ class Two_Lane():
             if not car_queue.empty():
                 car = car_queue.get()
                 self.lanes[lane][loc].set_vehicle(car)
-    
+
     def _place_vehicle_qless(self, vehicle):
         lane = vehicle.get_source_lane()
         loc = vehicle.get_source()
@@ -129,7 +129,7 @@ class Two_Lane():
                     gap = 0
                 else:
                     gap += 1
-    
+
     def _look_back(self, lane, loc):
         #calculates backward gap at a location
         if loc >= self.length:
@@ -160,7 +160,7 @@ class Two_Lane():
         self.lanes[(lane + 1) % 2][loc].set_vehicle(vehicle)
 
     ### Vehicle Movement
-    
+
     def _update_vehicle_speeds(self):
         for lane in self.lanes:
             for cell in lane:
@@ -198,7 +198,7 @@ class Two_Lane():
         self._advance_vehicles()
         self._timestep_stoplights()
         self.sim_time += 1
-        
+
 
     def _timestep_stoplights(self):
         for i in range(self.length):
@@ -218,8 +218,8 @@ class Two_Lane():
         else:
             for i in range(steps):
                 self._timestep()
-        
-        self.stats.calculate_stats()
+
+        #self.stats.calculate_stats()
 
     ### Miscellaneous
 
