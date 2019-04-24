@@ -10,7 +10,7 @@ import random
 
 BACK_GAP = 2
 LANE_CHANGE_PROB = .5
-SCALE_FACTOR = 1
+SCALE_FACTOR = .7
 Q_SIZE = 5
 
 class Two_Lane():
