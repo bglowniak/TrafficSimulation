@@ -1,7 +1,13 @@
-# CX 4230 Project 2
+# Peachtree St NE Traffic Simulation
+
+This project was built by Brian Glowniak and Joel Katz for CX 4230/CSE 6730 Computer Simulation at GT.
+
+The goal was to follow the steps of the modeling and simulation life cycle to develop and analyze multiple simulations of traffic traversing a section of Peachtree St NE in Atlanta (from 10th St to 14th St). We devised a conceptual model, performed input analysis, programmed our simulation models, completed verification and validation on the models, and finally did output analysis on the results. The full project is summarized in ProjectReport.pdf.
+
+We built two models, each following a different paradigm - one using Cellular Automata, and the other using Discrete Event Simulation.
 
 ## Cellular Automata (developed by Joel Katz)
-1) navigate to ca folder in command prompt
+1) navigate to the ca folder in command prompt
 2) If you are running from command line (see below for PACE instructions):
      python driver.py
 3) Adjust parameters in driver.py like stoplight locations and timers, or length of road and initial # of cars
@@ -14,6 +20,9 @@
      * *des_vehicle.py* contains the vehicle class
 
 2) If you are running from the command line, execute: *python des_simulation.py* to run the simulation (see below for PACE instructions). State variables can be modified within this file in the instantiation of SimulationState.
+
+## Input Analysis
+The InputAnalysis folder contains the Jupyter notebook used to generate empirical distributions of variables such as vehicle velocity, vehicle interarrival time, and vehicle entrance and exit points. We used the NGSIM data set, a public archive, to perform this analysis (more info on this set is outlined in the resource docs within that folder).
 
 ## Common Files (these are present in both directories so each sim can use them)
 1) *simulation_input.py* defines the distributions and vehicle generation functions
